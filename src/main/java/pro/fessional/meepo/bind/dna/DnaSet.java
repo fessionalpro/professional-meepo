@@ -17,6 +17,9 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 /**
+ * DNA:SET describes a parse-time regular-expression replacement.
+ * Matching occurrences consume its Life; apply creates fixed TxtDnaSet fragments.
+ *
  * <pre>
  * ` &lt;% DNA:SET /ConstantEnumTemplate/{{className}}/* %&gt; \n`
  * edge=`&lt;% DNA:SET /ConstantEnumTemplate/{{className}}/* %&gt;`

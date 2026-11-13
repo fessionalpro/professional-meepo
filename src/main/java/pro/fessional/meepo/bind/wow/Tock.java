@@ -4,13 +4,16 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pro.fessional.meepo.bind.Exon;
+import pro.fessional.meepo.pack.Utxt;
 import pro.fessional.meepo.util.Dent;
 
 import java.io.Writer;
 import java.util.ArrayList;
 
 /**
- * Process Control
+ * Tock is a named runtime control group containing a child gene.
+ * WHEN, EACH, ELSE and DONE use the name to coordinate control flow through
+ * Acid.execute; Tick handles parse-time matches, while Tock handles merge-time groups.
  *
  * @author trydofor
  * @since 2020-11-01
@@ -21,17 +24,17 @@ public class Tock extends Exon {
 
     public final @NotNull String tock;
     public final ArrayList<Exon> gene;
-    protected final char @NotNull [] tock9;
+    protected final @NotNull Utxt tock9;
 
     public Tock(@NotNull String text, @NotNull Clop edge, @NotNull String tock) {
-        this(Dent.chars(text, edge), edge, tock);
+        this(new Utxt(Dent.chars(text, edge)), edge, tock);
     }
 
-    protected Tock(char @NotNull [] text9, @NotNull Clop edge, @NotNull String tock) {
+    protected Tock(@NotNull Utxt text9, @NotNull Clop edge, @NotNull String tock) {
         super(text9, edge);
         this.tock = tock;
         this.gene = new ArrayList<>();
-        this.tock9 = tock.toCharArray();
+        this.tock9 = new Utxt(tock.toCharArray());
     }
 
     @Override

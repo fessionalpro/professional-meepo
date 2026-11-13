@@ -1,5 +1,6 @@
 package pro.fessional.meepo.util;
 
+import javax.tools.DiagnosticCollector;
 import javax.tools.FileObject;
 import javax.tools.ForwardingJavaFileManager;
 import javax.tools.JavaCompiler;
@@ -13,6 +14,8 @@ import java.io.OutputStream;
 import java.lang.reflect.Constructor;
 import java.net.URI;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author trydofor
@@ -39,38 +42,41 @@ public class Java {
     public static <T> Class<T> compile(String javaFile, String javaCode) {
         try {
             JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-
-//            DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
+            if (compiler == null) throw new IllegalStateException("a JDK compiler is required");
+            DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
 
             String fullPath = javaFile.replace('.', '/');
-            final JavaByte byteObject = new JavaByte(fullPath);
+            final Map<String, JavaByte> byteObjects = new HashMap<>();
 
-            JavaFileManager fileManager = new ForwardingJavaFileManager<StandardJavaFileManager>
-                    (compiler.getStandardFileManager(null, null, null)) {
+            try (JavaFileManager fileManager = new ForwardingJavaFileManager<StandardJavaFileManager>
+                (compiler.getStandardFileManager(null, null, null)) {
                 @Override
                 public JavaFileObject getJavaFileForOutput(Location location,
                                                            String className, JavaFileObject.Kind kind,
                                                            FileObject sibling) {
-                    return byteObject;
+                    JavaByte bytes = new JavaByte(className.replace('.', '/'));
+                    byteObjects.put(className, bytes);
+                    return bytes;
                 }
-            };
+            }) {
 
-            JavaCode stringObject = new JavaCode(fullPath, javaCode);
-
-            JavaCompiler.CompilationTask task = compiler.getTask(
-                    null, fileManager, null, null, null,
+                JavaCode stringObject = new JavaCode(fullPath, javaCode);
+                JavaCompiler.CompilationTask task = compiler.getTask(
+                    // Runtime expressions need no annotation processors from the host classpath.
+                    null, fileManager, diagnostics, Collections.singletonList("-proc:none"), null,
                     Collections.singletonList(stringObject));
-
-            //
-            task.call();
-
-            fileManager.close();
+                if (!Boolean.TRUE.equals(task.call())) {
+                    throw new IllegalStateException("compilation failed: " + diagnostics.getDiagnostics());
+                }
+            }
 
             //
             final ClassLoader classLoader = new ClassLoader() {
                 @Override
-                public Class<?> findClass(String name) {
-                    byte[] bytes = byteObject.getBytes();
+                public Class<?> findClass(String name) throws ClassNotFoundException {
+                    JavaByte compiled = byteObjects.get(name);
+                    if (compiled == null) throw new ClassNotFoundException(name);
+                    byte[] bytes = compiled.getBytes();
                     return defineClass(name, bytes, 0, bytes.length);
                 }
             };

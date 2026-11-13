@@ -1,0 +1,809 @@
+{
+  "format": "meepo-conformance-1",
+  "reference": "Java working tree 1.5.2-SNAPSHOT, 2026-11-09",
+  "notes": "expected is exact text; error.phase is parse or merge; profiles distinguish ordinary core, historical Java edges and UTF-16-specific inputs",
+  "cases": [
+    {
+      "id": "plain-without-header",
+      "profile": "core",
+      "mode": "comment",
+      "source": "# RNA:USE /X/name/*\nX\n",
+      "context": {
+        "name": "A"
+      },
+      "expected": "# RNA:USE /X/name/*\nX\n"
+    },
+    {
+      "id": "header-eof",
+      "profile": "core",
+      "mode": "comment",
+      "source": "# HI-MEEPO",
+      "context": {},
+      "expected": ""
+    },
+    {
+      "id": "header-case",
+      "profile": "core",
+      "mode": "comment",
+      "source": "# hi-meepo\n# dna:set /X/Y/*\nX\n",
+      "context": {},
+      "expected": "Y\n"
+    },
+    {
+      "id": "block-inline",
+      "profile": "core",
+      "mode": "comment",
+      "source": "<!-- HI-MEEPO -->\n<p><!-- DNA:SET /X/Y/* --></p>\nX",
+      "context": {},
+      "expected": "<p></p>\nY"
+    },
+    {
+      "id": "header-invalid-prefix",
+      "profile": "core",
+      "mode": "comment",
+      "source": "prefix # HI-MEEPO\nX",
+      "context": {},
+      "expected": "prefix # HI-MEEPO\nX"
+    },
+    {
+      "id": "trim-line",
+      "profile": "core",
+      "mode": "comment",
+      "source": "  # HI-MEEPO\n  # DNA:SET /X/Y/*  \nX\n",
+      "context": {},
+      "expected": "Y\n"
+    },
+    {
+      "id": "keep-line",
+      "profile": "core",
+      "mode": "comment",
+      "source": "  # HI-MEEPO!\n  # DNA:SET /X/Y/*  \nX\n",
+      "context": {},
+      "expected": "    Y\n"
+    },
+    {
+      "id": "raw-block",
+      "profile": "core",
+      "mode": "comment",
+      "source": "<!-- HI-MEEPO -->\n<!-- DNA:RAW   <x/>   -->\n",
+      "context": {},
+      "expected": "<x/>\n"
+    },
+    {
+      "id": "set-default-once",
+      "profile": "core",
+      "mode": "comment",
+      "source": "# HI-MEEPO\n# DNA:SET /X/Y/\nXXX\n",
+      "context": {},
+      "expected": "YXX\n"
+    },
+    {
+      "id": "set-scope-ranges",
+      "profile": "core",
+      "mode": "comment",
+      "source": "# HI-MEEPO\n# DNA:SET /X/Y/1,3-4\nXXXXX\n",
+      "context": {},
+      "expected": "YXYYX\n"
+    },
+    {
+      "id": "set-reversed-ranges",
+      "profile": "core",
+      "mode": "comment",
+      "source": "# HI-MEEPO\n# DNA:SET /X/Y/4-3,1,3\nXXXXX\n",
+      "context": {},
+      "expected": "YXYYX\n"
+    },
+    {
+      "id": "group-one-replacement",
+      "profile": "core",
+      "mode": "comment",
+      "source": "# HI-MEEPO\n# DNA:SET /a(b)c/Q/*\nabc abc\n",
+      "context": {},
+      "expected": "aQc aQc\n"
+    },
+    {
+      "id": "replacement-is-literal",
+      "profile": "core",
+      "mode": "comment",
+      "source": "# HI-MEEPO\n# DNA:SET /X/\\1/*\nX\n",
+      "context": {},
+      "expected": "\\1\n"
+    },
+    {
+      "id": "no-reprocessing",
+      "profile": "core",
+      "mode": "comment",
+      "source": "# HI-MEEPO\n# DNA:SET /X/Y/*\n# DNA:SET /Y/Z/*\nX Y\n",
+      "context": {},
+      "expected": "Y Z\n"
+    },
+    {
+      "id": "named-scope-end",
+      "profile": "core",
+      "mode": "comment",
+      "source": "# HI-MEEPO\n# DNA:SET /X/Y/part\nX\n# DNA:END part\nX\n",
+      "context": {},
+      "expected": "Y\nX\n"
+    },
+    {
+      "id": "bkb-literal",
+      "profile": "core",
+      "mode": "comment",
+      "source": "# HI-MEEPO\n# DNA:BKB shield\n# DNA:SET /X/Y/*\nX\n# DNA:END shield\nX\n",
+      "context": {},
+      "expected": "# DNA:SET /X/Y/*\nX\nX\n"
+    },
+    {
+      "id": "raw-in-bkb",
+      "profile": "core",
+      "mode": "comment",
+      "source": "# HI-MEEPO\n# DNA:BKB shield\n# DNA:RAW X\n# DNA:END shield\n",
+      "context": {},
+      "expected": "# DNA:RAW X\n"
+    },
+    {
+      "id": "use-dynamic",
+      "profile": "core",
+      "mode": "comment",
+      "source": "# HI-MEEPO\n# RNA:USE /X/name/*\nX X\n",
+      "context": {
+        "name": "A"
+      },
+      "expected": "A A\n"
+    },
+    {
+      "id": "put-raw",
+      "profile": "core",
+      "mode": "comment",
+      "source": "# HI-MEEPO\n# RNA:PUT raw/value/hello/\n# RNA:USE /X/value/*\nX\n",
+      "context": {},
+      "expected": "hello\n"
+    },
+    {
+      "id": "raw-does-not-unescape",
+      "profile": "core",
+      "mode": "comment",
+      "source": "# HI-MEEPO\n# RNA:RUN raw/X/\\n/*\nX\n",
+      "context": {},
+      "expected": "\\n\n"
+    },
+    {
+      "id": "raw-mute-does-not-erase",
+      "profile": "core",
+      "mode": "comment",
+      "source": "# HI-MEEPO\n# RNA:RUN raw!/X/value/*\nX\n",
+      "context": {},
+      "expected": "value\n"
+    },
+    {
+      "id": "use-missing",
+      "profile": "core",
+      "mode": "comment",
+      "source": "# HI-MEEPO\n# RNA:USE /X/meepo_missing_value_123/*\n[X]\n",
+      "context": {},
+      "expected": "[]\n"
+    },
+    {
+      "id": "scope-whitespace-defaults",
+      "profile": "java-edges",
+      "mode": "comment",
+      "source": "# HI-MEEPO\n# DNA:SET /X/Y/ *\nXXX\n",
+      "context": {},
+      "expected": "YXX\n"
+    },
+    {
+      "id": "when-true",
+      "profile": "core",
+      "mode": "comment",
+      "source": "# HI-MEEPO\n# RNA:WHEN /yes/flag/g\nyes\n# RNA:ELSE g\nno\n# RNA:DONE g\n",
+      "context": {
+        "flag": true
+      },
+      "expected": "yes\n"
+    },
+    {
+      "id": "when-negative",
+      "profile": "core",
+      "mode": "comment",
+      "source": "# HI-MEEPO\n# RNA:WHEN /not/flag/g\nnegative\n# RNA:ELSE g\npositive\n# RNA:DONE g\n",
+      "context": {
+        "flag": false
+      },
+      "expected": "negative\n"
+    },
+    {
+      "id": "truth-string-false",
+      "profile": "core",
+      "mode": "comment",
+      "source": "# HI-MEEPO\n# RNA:WHEN /yes/value/g\nT\n# RNA:ELSE g\nF\n# RNA:DONE g\n",
+      "context": {
+        "value": "false"
+      },
+      "expected": "T\n"
+    },
+    {
+      "id": "truth-zero",
+      "profile": "core",
+      "mode": "comment",
+      "source": "# HI-MEEPO\n# RNA:WHEN /yes/value/g\nT\n# RNA:ELSE g\nF\n# RNA:DONE g\n",
+      "context": {
+        "value": 0
+      },
+      "expected": "F\n"
+    },
+    {
+      "id": "truth-tiny",
+      "profile": "core",
+      "mode": "comment",
+      "source": "# HI-MEEPO\n# RNA:WHEN /yes/value/g\nT\n# RNA:ELSE g\nF\n# RNA:DONE g\n",
+      "context": {
+        "value": 5e-10
+      },
+      "expected": "F\n"
+    },
+    {
+      "id": "truth-threshold",
+      "profile": "core",
+      "mode": "comment",
+      "source": "# HI-MEEPO\n# RNA:WHEN /yes/value/g\nT\n# RNA:ELSE g\nF\n# RNA:DONE g\n",
+      "context": {
+        "value": 1e-09
+      },
+      "expected": "T\n"
+    },
+    {
+      "id": "truth-empty-map",
+      "profile": "core",
+      "mode": "comment",
+      "source": "# HI-MEEPO\n# RNA:WHEN /yes/value/g\nT\n# RNA:ELSE g\nF\n# RNA:DONE g\n",
+      "context": {
+        "value": {}
+      },
+      "expected": "F\n"
+    },
+    {
+      "id": "truth-empty-list",
+      "profile": "core",
+      "mode": "comment",
+      "source": "# HI-MEEPO\n# RNA:WHEN /yes/value/g\nT\n# RNA:ELSE g\nF\n# RNA:DONE g\n",
+      "context": {
+        "value": []
+      },
+      "expected": "F\n"
+    },
+    {
+      "id": "each-stride-metadata",
+      "profile": "core",
+      "mode": "comment",
+      "source": "# HI-MEEPO\n# RNA:EACH /2/items/it\n# RNA:USE /V/it/*\n# RNA:USE /C/it._count/*\n# RNA:USE /T/it._total/*\n# RNA:USE /F/it._first/*\n# RNA:USE /L/it._last/*\nV:C:T:F:L\n# RNA:DONE it\n",
+      "context": {
+        "items": [
+          "a",
+          "b",
+          "c"
+        ]
+      },
+      "expected": "a:1:3:true:false\nc:2:3:false:true\n"
+    },
+    {
+      "id": "each-reverse",
+      "profile": "core",
+      "mode": "comment",
+      "source": "# HI-MEEPO\n# RNA:EACH /-2/items/it\n# RNA:USE /V/it/*\nV\n# RNA:DONE it\n",
+      "context": {
+        "items": [
+          "a",
+          "b",
+          "c"
+        ]
+      },
+      "expected": "c\na\n"
+    },
+    {
+      "id": "each-empty-else",
+      "profile": "core",
+      "mode": "comment",
+      "source": "# HI-MEEPO\n# RNA:EACH /1/items/it\nunused\n# RNA:ELSE it\nempty\n# RNA:DONE it\n",
+      "context": {
+        "items": []
+      },
+      "expected": "empty\n"
+    },
+    {
+      "id": "each-noncollection",
+      "profile": "core",
+      "mode": "comment",
+      "source": "# HI-MEEPO\n# RNA:EACH /1/items/it\nunused\n# RNA:ELSE it\nempty\n# RNA:DONE it\n",
+      "context": {
+        "items": 123
+      },
+      "expected": "empty\n"
+    },
+    {
+      "id": "indent-sequence",
+      "profile": "core",
+      "mode": "comment",
+      "source": "# HI-MEEPO\n# RNA:USE /VALUE/rows/*\n  VALUE\n",
+      "context": {
+        "rows": [
+          "a\n",
+          "b"
+        ]
+      },
+      "expected": "  a\n  b\n"
+    },
+    {
+      "id": "holder-basic",
+      "profile": "core",
+      "mode": "placeholder",
+      "source": "{{ name }} / {{other}}",
+      "context": {
+        "name": "\u4e2d\u6587\ud83d\ude00"
+      },
+      "expected": "\u4e2d\u6587\ud83d\ude00 / "
+    },
+    {
+      "id": "holder-full-key-first",
+      "profile": "core",
+      "mode": "placeholder",
+      "source": "{{user.name}}",
+      "context": {
+        "user.name": "flat",
+        "user": {
+          "name": "nested"
+        }
+      },
+      "expected": "flat"
+    },
+    {
+      "id": "holder-null-falls-through",
+      "profile": "core",
+      "mode": "placeholder",
+      "source": "{{user.name}}",
+      "context": {
+        "user.name": null,
+        "user": {
+          "name": "nested"
+        }
+      },
+      "expected": "nested"
+    },
+    {
+      "id": "holder-pipe",
+      "profile": "core",
+      "mode": "placeholder",
+      "source": "{{value|upperCase}}",
+      "context": {
+        "value": "hello"
+      },
+      "expected": "HELLO"
+    },
+    {
+      "id": "mod-negative",
+      "profile": "core",
+      "mode": "placeholder",
+      "source": "{{value|mod even odd}}",
+      "context": {
+        "value": -1
+      },
+      "expected": "odd"
+    },
+    {
+      "id": "see-false-is-visible",
+      "profile": "core",
+      "mode": "placeholder",
+      "source": "{{fun:see nil flag fallback}}",
+      "context": {
+        "flag": false,
+        "fallback": "x"
+      },
+      "expected": "false"
+    },
+    {
+      "id": "quoted-empty-string",
+      "profile": "core",
+      "mode": "placeholder",
+      "source": "{{nil|mod \"\"}}",
+      "context": {},
+      "expected": ""
+    },
+    {
+      "id": "quoted-number-stays-string",
+      "profile": "core",
+      "mode": "placeholder",
+      "source": "{{nil|mod \"001\"}}",
+      "context": {},
+      "expected": "001"
+    },
+    {
+      "id": "number-separators",
+      "profile": "core",
+      "mode": "placeholder",
+      "source": "{{nil|mod 1_000L}}",
+      "context": {},
+      "expected": "1000"
+    },
+    {
+      "id": "literal-not-head-value",
+      "profile": "core",
+      "mode": "placeholder",
+      "source": "{{TRUE}}",
+      "context": {},
+      "expected": ""
+    },
+    {
+      "id": "unmatched-opening-kept",
+      "profile": "java-edges",
+      "mode": "placeholder",
+      "source": "a{{missing",
+      "context": {},
+      "expected": "a{{missing"
+    },
+    {
+      "id": "unmatched-closing-at-zero",
+      "profile": "java-edges",
+      "mode": "placeholder",
+      "source": "}}x",
+      "context": {},
+      "expected": "}}x"
+    },
+    {
+      "id": "custom-holder-delimiters",
+      "profile": "core",
+      "mode": "placeholder",
+      "source": "Hi ${name}!",
+      "context": {
+        "name": "A"
+      },
+      "expected": "Hi A!",
+      "holder": {
+        "prefix": "${",
+        "suffix": "}",
+        "escape": ""
+      }
+    },
+    {
+      "id": "holder-odd-even-escape",
+      "profile": "core",
+      "mode": "placeholder",
+      "source": "\\{{literal\\}} / \\\\{{name}}",
+      "context": {
+        "name": "A"
+      },
+      "expected": "{{literal}} / \\A",
+      "holder": {
+        "prefix": "{{",
+        "suffix": "}}",
+        "escape": "\\"
+      }
+    },
+    {
+      "id": "utf8-unicode",
+      "profile": "core",
+      "mode": "placeholder",
+      "source": "\u9759\u6001\ud83d\ude00{{value}}\u5c3e",
+      "context": {
+        "value": "\u4e2d\u6587"
+      },
+      "expected": "\u9759\u6001\ud83d\ude00\u4e2d\u6587\u5c3e"
+    },
+    {
+      "id": "utf16-cross-fragment",
+      "profile": "java-utf16",
+      "mode": "placeholder",
+      "source": "\ud83d{{value}}",
+      "context": {
+        "value": "\ude00"
+      },
+      "expected": "\ud83d\ude00"
+    },
+    {
+      "id": "bad-step-zero",
+      "profile": "core",
+      "mode": "comment",
+      "source": "# HI-MEEPO\n# RNA:EACH /0/items/it\n# RNA:DONE it\n",
+      "context": {},
+      "error": {
+        "phase": "parse"
+      }
+    },
+    {
+      "id": "bad-when-case",
+      "profile": "core",
+      "mode": "comment",
+      "source": "# HI-MEEPO\n# RNA:WHEN /YES/flag/g\n# RNA:DONE g\n",
+      "context": {},
+      "error": {
+        "phase": "parse"
+      }
+    },
+    {
+      "id": "bad-group-gap",
+      "profile": "core",
+      "mode": "comment",
+      "source": "# HI-MEEPO\n# RNA:WHEN /yes/flag/ g\n# RNA:DONE g\n",
+      "context": {},
+      "error": {
+        "phase": "parse"
+      }
+    },
+    {
+      "id": "unclosed-group",
+      "profile": "core",
+      "mode": "comment",
+      "source": "# HI-MEEPO\n# RNA:WHEN /yes/flag/g\nT\n",
+      "context": {},
+      "error": {
+        "phase": "parse"
+      }
+    },
+    {
+      "id": "bad-regex-even-lax",
+      "profile": "core",
+      "mode": "comment",
+      "source": "# HI-MEEPO\n# DNA:SET /[/X/*\nX\n",
+      "context": {},
+      "lax": true,
+      "error": {
+        "phase": "parse"
+      }
+    },
+    {
+      "id": "overlapping-replacements",
+      "profile": "core",
+      "mode": "comment",
+      "source": "# HI-MEEPO\n# DNA:SET /abc/X/*\n# DNA:SET /bc/Y/*\nabc\n",
+      "context": {},
+      "error": {
+        "phase": "parse"
+      }
+    },
+    {
+      "id": "unknown-directive-is-text",
+      "profile": "core",
+      "mode": "comment",
+      "source": "# HI-MEEPO\n# RNA:UNKNOWN value\nX\n",
+      "context": {},
+      "expected": "# RNA:UNKNOWN value\nX\n"
+    },
+    {
+      "id": "bad-split-lax-is-text",
+      "profile": "core",
+      "mode": "comment",
+      "source": "# HI-MEEPO\n# DNA:SET /missing\nX\n",
+      "context": {},
+      "expected": "# DNA:SET /missing\nX\n",
+      "lax": true
+    },
+    {
+      "id": "holder-missing-function-is-muted",
+      "profile": "core",
+      "mode": "placeholder",
+      "source": "{{value|meepo_missing_function_123}}",
+      "context": {},
+      "expected": ""
+    },
+    {
+      "id": "holder-nested-prefix",
+      "profile": "core",
+      "mode": "placeholder",
+      "source": "{{a{{b}}",
+      "context": {},
+      "error": {
+        "phase": "parse"
+      }
+    },
+    {
+      "id": "holder-stray-suffix",
+      "profile": "core",
+      "mode": "placeholder",
+      "source": "x}}",
+      "context": {},
+      "error": {
+        "phase": "parse"
+      }
+    },
+    {
+      "id": "include-child",
+      "profile": "core",
+      "mode": "comment",
+      "source": "# HI-MEEPO\n# DNA:SON ./parts/child.tpl\nparent\n",
+      "context": {
+        "name": "A"
+      },
+      "expected": "child A\nparent\n",
+      "files": {
+        "parts/child.tpl": "# HI-MEEPO\n# RNA:USE /X/name/*\nchild X\n"
+      }
+    },
+    {
+      "id": "include-cycle",
+      "profile": "core",
+      "mode": "comment",
+      "source": "# HI-MEEPO\n# DNA:SON ./child.tpl\n",
+      "context": {},
+      "files": {
+        "child.tpl": "# HI-MEEPO\n# DNA:SON ./main.tpl\n"
+      },
+      "error": {
+        "phase": "parse"
+      }
+    },
+    {
+      "id": "keep-block-whitespace",
+      "profile": "core",
+      "mode": "comment",
+      "source": "  <!-- HI-MEEPO! -->\n  <!-- DNA:SET /X/Y/* -->  \nX\n",
+      "context": {},
+      "expected": "  \n    \nY\n"
+    },
+    {
+      "id": "run-missing-function-errors",
+      "profile": "core",
+      "mode": "comment",
+      "source": "# HI-MEEPO\n# RNA:RUN /X/value|meepo_missing_function_123/*\nX\n",
+      "context": {
+        "value": "A"
+      },
+      "error": {
+        "phase": "merge"
+      }
+    },
+    {
+      "id": "conditional-short-circuit",
+      "profile": "core",
+      "mode": "comment",
+      "source": "# HI-MEEPO\n# RNA:WHEN /yes/flag/g\nfirst\n# RNA:WHEN /yes/missing|badFunction/g\nsecond\n# RNA:ELSE g\nlast\n# RNA:DONE g\n",
+      "context": {
+        "flag": true
+      },
+      "expected": "first\n"
+    },
+    {
+      "id": "optional-capture-does-not-count",
+      "profile": "core",
+      "mode": "comment",
+      "source": "# HI-MEEPO\n# DNA:SET /(a)?b/X/\nb ab\n",
+      "context": {},
+      "expected": "b Xb\n"
+    },
+    {
+      "id": "alternate-separator",
+      "profile": "core",
+      "mode": "comment",
+      "source": "# HI-MEEPO\n# DNA:SET #a/b#c/d#*\na/b\n",
+      "context": {},
+      "expected": "c/d\n"
+    },
+    {
+      "id": "header-lookahead-boundary",
+      "profile": "java-edges",
+      "mode": "comment",
+      "source": "# HI-MEEPO\n# DNA:SET /X/Y/*\n<!-- HI-MEEPO -->\n<!-- DNA:RAW tail -->\nX\n",
+      "context": {},
+      "expected": "# DNA:SET /X/Y/*\ntail\nX\n"
+    },
+    {
+      "id": "raw-never-reparsed",
+      "profile": "core",
+      "mode": "comment",
+      "source": "# HI-MEEPO\n# DNA:RAW # RNA:USE /X/value/*\nX\n",
+      "context": {
+        "value": "A"
+      },
+      "expected": "# RNA:USE /X/value/*X\n"
+    },
+    {
+      "id": "bkb-unclosed-final-flush",
+      "profile": "java-edges",
+      "mode": "comment",
+      "source": "# HI-MEEPO\n# DNA:SET /X/Y/*\n# DNA:BKB shield\nX\n",
+      "context": {},
+      "expected": "Y\n"
+    },
+    {
+      "id": "life-name-shadow",
+      "profile": "java-edges",
+      "mode": "comment",
+      "source": "# HI-MEEPO\n# DNA:SET /X/A/part\n# DNA:SET /Y/B/part\n# DNA:END part\nXY\n",
+      "context": {},
+      "expected": "AY\n"
+    },
+    {
+      "id": "invalid-first-header-stops",
+      "profile": "java-edges",
+      "mode": "comment",
+      "source": "HI-MEEPO\n# HI-MEEPO\n# DNA:SET /X/Y/*\nX\n",
+      "context": {},
+      "expected": "HI-MEEPO\n# HI-MEEPO\n# DNA:SET /X/Y/*\nX\n"
+    },
+    {
+      "id": "missing-use-function-muted",
+      "profile": "core",
+      "mode": "comment",
+      "source": "# HI-MEEPO\n# RNA:USE /X/value|badFunction/*\n[X]\n",
+      "context": {
+        "value": "A"
+      },
+      "expected": "[]\n"
+    },
+    {
+      "id": "include-twice",
+      "profile": "core",
+      "mode": "comment",
+      "source": "# HI-MEEPO\n# DNA:SON ./child.tpl\n# DNA:SON ./child.tpl\n",
+      "context": {},
+      "expected": "child\nchild\n",
+      "files": {
+        "child.tpl": "# HI-MEEPO\nchild\n"
+      }
+    },
+    {
+      "id": "include-runtime-context-shared",
+      "profile": "core",
+      "mode": "comment",
+      "source": "# HI-MEEPO\n# DNA:SON ./child.tpl\n# RNA:USE /X/value/*\nX\n",
+      "context": {},
+      "expected": "child\n",
+      "files": {
+        "child.tpl": "# HI-MEEPO\n# RNA:PUT raw/value/child/\n"
+      }
+    },
+    {
+      "id": "no-automatic-escaping",
+      "profile": "core",
+      "mode": "placeholder",
+      "source": "{{value}}",
+      "context": {
+        "value": "<b>&\""
+      },
+      "expected": "<b>&\""
+    },
+    {
+      "id": "camel-leading-underscore",
+      "profile": "java-edges",
+      "mode": "placeholder",
+      "source": "{{value|camelCase}}",
+      "context": {
+        "value": "_abc"
+      },
+      "expected": "Abc"
+    },
+    {
+      "id": "colon-is-not-navigation",
+      "profile": "core",
+      "mode": "placeholder",
+      "source": "{{user:name}}",
+      "context": {
+        "user": {
+          "name": "nested"
+        }
+      },
+      "expected": ""
+    },
+    {
+      "id": "switch-delimiters-after-text",
+      "profile": "core",
+      "mode": "comment",
+      "source": "# HI-MEEPO\nintro\n# DNA:SET /X/Y/*\n<!-- HI-MEEPO -->\n<!-- DNA:RAW tail -->\nX\n",
+      "context": {},
+      "expected": "intro\ntail\nY\n"
+    },
+    {
+      "id": "bare-head-function-no-alias",
+      "profile": "core",
+      "mode": "placeholder",
+      "source": "{{abs}}",
+      "context": {},
+      "expected": ""
+    },
+    {
+      "id": "prefixed-head-function-no-args",
+      "profile": "core",
+      "mode": "placeholder",
+      "source": "{{fun:abs}}",
+      "context": {},
+      "expected": "0"
+    }
+  ]
+}

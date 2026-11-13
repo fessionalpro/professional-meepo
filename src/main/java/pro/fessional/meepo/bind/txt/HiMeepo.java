@@ -10,6 +10,9 @@ import java.io.StringWriter;
 import java.io.Writer;
 
 /**
+ * HI-MEEPO declares the target language's comment delimiters and trimming policy.
+ * The parser consumes this header; it is retained for source reconstruction.
+ *
  * <pre>
  * `&lt;% HI-MEEPO %&gt; \n`
  * head=`&lt;%`

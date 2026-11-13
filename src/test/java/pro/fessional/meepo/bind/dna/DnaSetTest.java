@@ -5,7 +5,9 @@ import org.junit.jupiter.api.Test;
 import pro.fessional.meepo.TraceTest;
 import pro.fessional.meepo.bind.wow.Clop;
 import pro.fessional.meepo.bind.wow.Life;
+import pro.fessional.meepo.sack.Parser;
 
+import java.util.Collections;
 import java.util.regex.Pattern;
 
 /**
@@ -23,5 +25,15 @@ public class DnaSetTest extends TraceTest {
         logger.debug("d2={}", d2);
         Assertions.assertTrue(d1.toString().contains("find='false', repl='{{user.male}}'}"));
         Assertions.assertTrue(d2.toString().contains("find='false', repl='{{user.male}}'"));
+    }
+
+    @Test
+    void replacementsHandleWholeMatchesCapturesAndOptionalGroups() {
+        for (String pattern : new String[]{ "a+", "(a+)" }) {
+            String source = "# HI-MEEPO\n# DNA:SET /" + pattern + "/x/*\naaa|aa|a|";
+            Assertions.assertEquals("x|x|x|", Parser.parse(source).merge(Collections.emptyMap()));
+        }
+        String optional = "# HI-MEEPO\n# DNA:SET /a(b)?/x/*\na|ab|";
+        Assertions.assertEquals("a|ax|", Parser.parse(optional).merge(Collections.emptyMap()));
     }
 }

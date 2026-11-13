@@ -19,13 +19,12 @@ import static pro.fessional.meepo.bind.Const.TKN$VAR_PRE;
 import static pro.fessional.meepo.bind.Const.TKN$VAR_SUF;
 
 /**
- * <pre>
- * Placeholder template parser, thead safe.
- *
- * When syntax errors are found in the directive,
- * `lax` mode to log as warn and treat as plain text,
- * `strict` mode to throw exceptions
- * </pre>
+ * Placeholder parser: turns tokens such as {@code {{user.name}}} into the same
+ * {@link Gene}/{@link TxtRnaUse} representation used by comment directives.
+ * <p>Delimiter scanning happens during parsing; property lookup and value
+ * formatting happen during merging. Each static parse call owns its state,
+ * so completed genes can be reused. Strict mode reports malformed placeholders;
+ * lax mode keeps them as literal text.</p>
  *
  * @author trydofor
  * @since 2021-01-03
@@ -126,7 +125,7 @@ public class Holder {
         if (pln == 0 || sln == 0) {
             logger.warn("[👹Holder:parse] prefix or suffix is empty, return plain text");
             addText(exon, txt, 0, len);
-            return new Gene(exon, emptySet());
+            return Gene.parsed(exon, emptySet());
         }
 
         // escape and mark
@@ -154,11 +153,11 @@ public class Holder {
                 hze++;
                 logger.trace("[👹Holder:parse:origin] find escape at {}, ec={}", off, ec);
                 int sl = buff.length();
-                buff.delete(sl - ((ec + 1) / 2), sl);
+                buff.delete(sl - ((ec + 1) / 2) * esc.length(), sl);
             }
 
             if (ec % 2 == 0) {
-                edge.add(new int[]{buff.length(), ipe, off});
+                edge.add(new int[]{ buff.length(), ipe, off });
             }
 
             if (ipe == 0) {
@@ -176,7 +175,7 @@ public class Holder {
         if (edge.isEmpty()) {
             logger.trace("[👹Holder:parse:escape] return no-place-holder text and {} escaped", hze);
             addText(exon, rst, 0, rst.length());
-            return new Gene(exon, emptySet());
+            return Gene.parsed(exon, emptySet());
         }
 
         // parse
@@ -247,7 +246,7 @@ public class Holder {
         }
 
         addText(exon, rst, off, rst.length());
-        return new Gene(exon, rngs.getCheckedEngine());
+        return Gene.parsed(exon, rngs.getCheckedEngine());
     }
 
     private static void addText(ArrayList<Exon> exon, String txt, int s, int e) {

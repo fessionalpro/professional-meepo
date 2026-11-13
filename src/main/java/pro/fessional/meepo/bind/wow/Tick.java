@@ -2,6 +2,8 @@ package pro.fessional.meepo.bind.wow;
 
 import org.jetbrains.annotations.NotNull;
 import pro.fessional.meepo.bind.Exon;
+import pro.fessional.meepo.pack.Utxt;
+import pro.fessional.meepo.util.Dent;
 
 import java.util.List;
 import java.util.regex.Matcher;
@@ -12,7 +14,9 @@ import static pro.fessional.meepo.bind.wow.Life.State.Live;
 import static pro.fessional.meepo.bind.wow.Life.State.Skip;
 
 /**
- * Countdown to Life
+ * Tick applies a parse-time occurrence counter (Life) to pattern matches.
+ * Each participating match advances the counter; Live matches become replacement
+ * spans, Skip leaves the source untouched, and Dead retires the processor.
  *
  * @author trydofor
  * @since 2020-10-29
@@ -22,13 +26,12 @@ public class Tick extends Exon {
     @NotNull
     public final Life life;
 
-    protected Tick(char @NotNull [] text, @NotNull Clop edge, @NotNull Life life) {
-        super(text, edge);
-        this.life = life;
+    public Tick(@NotNull String text, @NotNull Clop edge, @NotNull Life life) {
+        this(new Utxt(Dent.chars(text, edge)), edge, life);
     }
 
-    public Tick(@NotNull String text, @NotNull Clop edge, @NotNull Life life) {
-        super(text, edge);
+    protected Tick(@NotNull Utxt text9, @NotNull Clop edge, @NotNull Life life) {
+        super(text9, edge);
         this.life = life;
     }
 
@@ -36,17 +39,11 @@ public class Tick extends Exon {
         Matcher m = find.matcher(txt);
         Life.State st = Skip;
         while (m.find()) {
+            int p0 = m.groupCount() > 0 ? m.start(1) : m.start();
+            int p1 = m.groupCount() > 0 ? m.end(1) : m.end();
+            if (p0 < 0) continue; // Optional capture group did not participate.
             st = life.enjoy();
             if (st == Live) {
-                int p0, p1;
-                if (m.groupCount() > 0) {
-                    p0 = m.start(1);
-                    p1 = m.end(1);
-                }
-                else {
-                    p0 = m.start();
-                    p1 = m.end();
-                }
                 lst.add(new N(p0, p1, this));
             }
             else if (st == Dead) {

@@ -39,10 +39,17 @@ public class UriEngineTest extends TraceTest {
     }
 
     @Test
-    public void evalHttp() {
-        Object t1 = engine.eval(context, new RnaWarmed("uri", "http://www.gitee.com"), false);
-        Object t2 = engine.eval(context, new RnaWarmed("uri", "http://www.gitee.com"), false);
-        assertTrue(((String) t1).length() > 100);
+    public void evalUrl(@org.junit.jupiter.api.io.TempDir java.nio.file.Path dir) throws Exception {
+        java.nio.file.Path file = dir.resolve("templates.jar");
+        try (java.util.jar.JarOutputStream jar = new java.util.jar.JarOutputStream(java.nio.file.Files.newOutputStream(file))) {
+            jar.putNextEntry(new java.util.jar.JarEntry("template.txt"));
+            jar.write("本地模板".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            jar.closeEntry();
+        }
+        String uri = "jar:" + file.toUri() + "!/template.txt";
+        Object t1 = engine.eval(context, new RnaWarmed("uri", uri), false);
+        Object t2 = engine.eval(context, new RnaWarmed("uri", uri), false);
+        assertEquals("本地模板", t1);
         assertSame(t1, t2);
     }
 }

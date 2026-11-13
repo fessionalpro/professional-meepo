@@ -16,7 +16,7 @@ import static pro.fessional.meepo.bind.Const.ENGINE$RAW;
  */
 public class RawEngine implements RnaEngine {
 
-    private static final String[] TYPE = {ENGINE$RAW};
+    private static final String[] TYPE = { ENGINE$RAW };
 
     @Override
     public @NotNull String[] type() {

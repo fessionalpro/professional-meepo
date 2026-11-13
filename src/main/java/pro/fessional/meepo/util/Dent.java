@@ -1,6 +1,9 @@
 package pro.fessional.meepo.util;
 
 import pro.fessional.meepo.bind.wow.Clop;
+import pro.fessional.meepo.pack.Cbuf;
+import pro.fessional.meepo.pack.Ubuf;
+import pro.fessional.meepo.pack.Utxt;
 
 import java.io.IOException;
 import java.io.StringWriter;
@@ -8,16 +11,19 @@ import java.io.Writer;
 import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.Map;
 
 /**
+ * Indentation and output helpers; Dent is the short name used for indent handling.
+ * Applies target-text margins and formats dynamic values consistently across writers.
+ *
  * @author trydofor
  * @since 2020-11-01
  */
 public class Dent {
 
-    private static final Map<Integer, char[]> PADDING = new HashMap<>();
+    private static final Map<Integer, char[]> PADDING = new ConcurrentHashMap<>();
 
     public static char[] chars(String text, Clop clop) {
         char[] chs = new char[clop.length];
@@ -34,6 +40,23 @@ public class Dent {
     public static void write(Writer out, char[] str) {
         try {
             out.write(str);
+        }
+        catch (IOException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    /**
+     * Write fixed text through the supplied writer, using Ubuf's encoded-fragment path.
+     */
+    public static void write(Writer out, Utxt str) {
+        try {
+            if (out instanceof Ubuf) {
+                ((Ubuf) out).write(str);
+            }
+            else {
+                out.write(str.getChars());
+            }
         }
         catch (IOException e) {
             throw new IllegalStateException(e);
@@ -179,7 +202,10 @@ public class Dent {
     public static void toString(Writer out, Object val) {
         if (val == null) return;
 
-        if (out instanceof StringWriter) {
+        if (out instanceof Cbuf) {
+            ((Cbuf) out).writeValue(val);
+        }
+        else if (out instanceof StringWriter) {
             StringBuffer buf = ((StringWriter) out).getBuffer();
             if (val instanceof CharSequence) {
                 buf.append((CharSequence) val);

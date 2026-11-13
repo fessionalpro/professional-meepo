@@ -1,5 +1,7 @@
 # 米波英雄模板 (pro.fessional.meepo)
 
+文档：[语法与跨语言实现规范](doc/syntax.zh.md)、[命名与执行流程](doc/naming.zh.md)、[完整索引](doc/README.zh.md)。
+
 ![Maven Central](https://img.shields.io/maven-central/v/pro.fessional/meepo?color=00DD00)
 ![Sonatype Snapshots](https://img.shields.io/nexus/s/pro.fessional/meepo?server=https%3A%2F%2Foss.sonatype.org)
 [![Coverage Status](https://coveralls.io/repos/github/trydofor/professional-meepo/badge.svg)](https://coveralls.io/github/trydofor/professional-meepo)
@@ -56,6 +58,11 @@
 * 解析字串 - 以`Parser`构造`Gene`, `#parse`
 
 如果有定制需要，可以自定义使用`Parser`和`Gene`来组合出需要的工具类。
+
+字符集由调用方在字节 I/O 边界指定，不进入模板语法。例如 `Meepo.parse(file, inputCharset)` 解码输入，
+`gene.merge(model, outputStream, outputCharset)` 输出字节；同一 Gene 可用不同输出编码，默认 UTF-8。
+输出统一使用 `merge` 重载，通过 Writer 或 OutputStream 参数区分；String 和 Writer 入口保留字符语义。
+完整规则见[输出与缓存](doc/syntax.zh.md#10-输出隔离与缓存)。
 
 ## 集成Mvc
 

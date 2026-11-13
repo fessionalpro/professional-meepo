@@ -8,14 +8,12 @@ import pro.fessional.meepo.poof.RnaEngine;
 import pro.fessional.meepo.poof.RnaWarmed;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static pro.fessional.meepo.bind.Const.ARR$EMPTY_OBJECT;
 import static pro.fessional.meepo.bind.Const.ENGINE$MAP;
-import static pro.fessional.meepo.eval.FunEnv.KEY$PREFIX;
 import static pro.fessional.meepo.poof.impl.map.MapHelper.KIND_FUNC;
 
 /**
@@ -28,7 +26,7 @@ public class MapEngine implements RnaEngine {
 
     private static final Logger logger = LoggerFactory.getLogger(MapEngine.class);
 
-    private static final String[] TYPE = {ENGINE$MAP};
+    private static final String[] TYPE = { ENGINE$MAP };
 
     @Override
     public @NotNull String[] type() {
@@ -42,10 +40,10 @@ public class MapEngine implements RnaEngine {
 
     @Override
     public Object eval(@NotNull Map<String, Object> ctx, @NotNull RnaWarmed expr, boolean mute) {
+        if (expr == RnaWarmed.EMPTY) return null;
         final ArrayList<RnaWarmed> work = expr.getTypedWork();
-        Iterator<RnaWarmed> wit = work.iterator();
         RnaWarmed curr = expr;
-        RnaWarmed navi = wit.next();
+        RnaWarmed navi = work.get(0);
         Object obj = null;
         boolean ie = false;
         try {
@@ -53,8 +51,10 @@ public class MapEngine implements RnaEngine {
             obj = MapHelper.get(ctx, navi.expr, navi.getTypedWork());
 
             if (navi.kind == KIND_FUNC) {
-                if (!(obj instanceof JavaEval || obj instanceof Function) && !navi.expr.startsWith(KEY$PREFIX)) {
-                    obj = MapHelper.get(ctx, KEY$PREFIX + navi.expr, navi.getTypedWork());
+                if (!(obj instanceof JavaEval || obj instanceof Function)) {
+                    String alias = MapHelper.functionKey(navi);
+                    // functionKey returns expr itself when the prefix is already present.
+                    if (alias != navi.expr) obj = MapHelper.get(ctx, alias, navi.getTypedWork());
                 }
             }
             else {
@@ -76,38 +76,34 @@ public class MapEngine implements RnaEngine {
                 obj = fun.apply(arg);
             }
 
-            while (wit.hasNext()) { // function
-                RnaWarmed pip = wit.next();
+            for (int i = 1, size = work.size(); i < size; i++) {
+                RnaWarmed pip = work.get(i);
                 curr = pip;
                 Object[] arg = pip.getTypedWork();
-                String key = pip.expr;
                 // Customized or simplified mode, function can be without prefixed 'fun:'
-                while (true) {
-                    Object cmd = ctx.get(key);
-                    if (cmd instanceof JavaEval) {
-                        obj = ((JavaEval) cmd).eval(ctx, obj, arg);
-                    }
-                    else if (cmd instanceof Function) {
-                        @SuppressWarnings("unchecked")
-                        Function<Object, Object> fun = (Function<Object, Object>) cmd;
-                        obj = fun.apply(obj);
-                    }
-                    else {
-                        if (key.startsWith(KEY$PREFIX)) {
-                            ie = true;
-                            throw new IllegalStateException("failed to get cmd, expr=" + pip);
-                        }
-                        else {
-                            key = KEY$PREFIX + key;
-                            continue;
-                        }
-                    }
-                    break;
+                Object cmd = ctx.get(pip.expr);
+                if (!(cmd instanceof JavaEval || cmd instanceof Function)) {
+                    String alias = MapHelper.functionKey(pip);
+                    // The same reference means this key has already been looked up.
+                    if (alias != pip.expr) cmd = ctx.get(alias);
+                }
+                if (cmd instanceof JavaEval) {
+                    obj = ((JavaEval) cmd).eval(ctx, obj, arg);
+                }
+                else if (cmd instanceof Function) {
+                    @SuppressWarnings("unchecked")
+                    Function<Object, Object> fun = (Function<Object, Object>) cmd;
+                    obj = fun.apply(obj);
+                }
+                else {
+                    ie = true;
+                    throw new IllegalStateException("failed to get cmd, expr=" + pip);
                 }
             }
         }
         catch (Throwable t) {
             if (mute) {
+                obj = null;
                 logger.warn("mute failed-eval " + expr, t);
             }
             else {

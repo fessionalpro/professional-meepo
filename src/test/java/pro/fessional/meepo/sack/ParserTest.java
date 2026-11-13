@@ -2,8 +2,9 @@ package pro.fessional.meepo.sack;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+
 import pro.fessional.meepo.TraceTest;
-import pro.fessional.meepo.bind.Exon;
+import pro.fessional.meepo.bind.*;
 import pro.fessional.meepo.bind.dna.DnaEnd;
 import pro.fessional.meepo.bind.dna.DnaSet;
 import pro.fessional.meepo.bind.dna.DnaSon;
@@ -17,18 +18,12 @@ import pro.fessional.meepo.bind.rna.RnaWhen;
 import pro.fessional.meepo.bind.txt.HiMeepo;
 import pro.fessional.meepo.bind.txt.TxtDnaSet;
 import pro.fessional.meepo.bind.txt.TxtSimple;
-import pro.fessional.meepo.bind.wow.Clop;
-import pro.fessional.meepo.bind.wow.Life;
-import pro.fessional.meepo.bind.wow.Tick;
+import pro.fessional.meepo.bind.wow.*;
 
 import java.io.CharArrayWriter;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static pro.fessional.meepo.bind.Const.TKN$DNA_;
 import static pro.fessional.meepo.bind.Const.TKN$RNA_;
 
@@ -346,6 +341,7 @@ public class ParserTest extends TraceTest {
             assertEquals(expr, rna.expr);
             assertEquals(life.toString(), rna.life.toString());
             assertEquals(quiet, rna.mute);
+            rna.check(new StringBuilder(), ctx.rngs);
             rna.merge(newAcid(ctx), buf);
             assertEquals("", buf.toString());
             buf.reset();
@@ -685,5 +681,152 @@ public class ParserTest extends TraceTest {
 
         checkRnaDone(level5, "@@/* RNA:DONE */\n", null, "/* RNA:DONE */\n");
         checkRnaDone(level5, "@@/* RNA:DONE*/\n", null, "/* RNA:DONE*/\n");
+    }
+
+    @Test
+    void customParserFramesWithTheSameGroupShareOneDoneMarker() {
+        Parser.Ctx context = new Parser.Ctx("", null, false);
+        pro.fessional.meepo.bind.wow.Clop edge = new pro.fessional.meepo.bind.wow.Clop(0, 0, 1, 1);
+        pro.fessional.meepo.bind.rna.RnaElse outer = new pro.fessional.meepo.bind.rna.RnaElse("", edge, "group");
+        context.procExon(outer);
+        outer.gene.add(new pro.fessional.meepo.bind.txt.TxtSimple("body", new pro.fessional.meepo.bind.wow.Clop(0, 4, 1, 1)));
+        pro.fessional.meepo.bind.rna.RnaElse inner = new pro.fessional.meepo.bind.rna.RnaElse("", edge, "group");
+        outer.gene.add(inner);
+        // Protected G/Ctx are extension hooks. A custom parser can build frames directly.
+        context.tree.addLast(new Parser.G("CUSTOM", "group", inner.gene));
+        context.procExon(new pro.fessional.meepo.bind.rna.RnaDone("", edge, java.util.Collections.singleton("group")));
+        assertEquals(1, context.tree.size());
+        assertEquals(1, outer.gene.stream().filter(x -> x instanceof pro.fessional.meepo.bind.rna.RnaDone).count());
+        assertSame(outer, context.toGene().exon.get(0));
+        Acid acid = new Acid(java.util.Collections.emptyMap(), java.util.Collections.emptySet());
+        java.io.StringWriter output = new java.io.StringWriter();
+        outer.merge(acid, output);
+        assertEquals("body", output.toString());
+        assertTrue(acid.execute.isEmpty(), "DONE must release the winning group for the next visit");
+    }
+
+    @Test
+    void aConsumedParseContextCannotProduceASecondGene() {
+        Parser.Ctx context = new Parser.Ctx("", null, false);
+        assertTrue(context.toGene().exon.isEmpty());
+        assertThrows(IllegalStateException.class, context::toGene);
+    }
+
+    @Test
+    void headerMayEndExactlyAtEndOfInput() {
+        assertEquals("", Parser.parse("# HI-MEEPO").merge(java.util.Collections.emptyMap()));
+    }
+
+    @Test
+    void headerPrefixMustBeTheFirstWordOnItsLine() {
+        String source = "literal # HI-MEEPO\n";
+        assertEquals(source, Parser.parse(source).merge(java.util.Collections.emptyMap()));
+    }
+
+    @Test
+    void inlineDirectivesPreserveTheTextBeforeTheirComment() {
+        String source = "<!-- HI-MEEPO -->\n<p><!-- DNA:SET /X/Y/* --></p>\nX";
+        assertEquals("<p></p>\nY", Parser.parse(source).merge(java.util.Collections.emptyMap()));
+    }
+
+    @Test
+    void indentedTockNamesAreRejectedRatherThanSilentlyChangingScope() {
+        assertThrows(IllegalStateException.class,
+            () -> Parser.parse("# HI-MEEPO\n# RNA:WHEN /yes/flag/ choice\nbody\n"));
+    }
+
+    @Test
+    void oneDoneDirectiveCanCloseSeveralDifferentNestedGroups() {
+        Gene gene = Parser.parse("# HI-MEEPO\n# RNA:WHEN /yes/outer/outer-scope\n"
+                                 + "# RNA:WHEN /yes/inner/inner-scope\nbody\n# RNA:DONE inner-scope outer-scope\ntail\n");
+        java.util.Map<String, Object> context = new java.util.HashMap<>();
+        context.put("outer", true);
+        context.put("inner", true);
+        assertEquals("body\ntail\n", gene.merge(context));
+        context.put("outer", false);
+        assertEquals("tail\n", gene.merge(context));
+    }
+
+    @Test
+    void extensionHelpersAcceptEmptyTextAndRespectRawBlockState() {
+        Parser.Ctx empty = new Parser.Ctx("", null, false);
+        Parser.dealTxtPlain(empty, 0, null);
+        empty.procText(0, 0);
+        assertTrue(empty.getGene().isEmpty());
+        Parser.Ctx raw = new Parser.Ctx("literal", null, false);
+        raw.bkbs.add("raw-block");
+        assertNotNull(Parser.dealRnaGroup(raw));
+        assertTrue(raw.getGene().isEmpty());
+        assertTrue(raw.rngs.getCheckedEngine().isEmpty());
+    }
+
+    @Test
+    void extensionGroupTokensMayHaveOnlyOneCharacter() {
+        Parser.Ctx context = new Parser.Ctx("# HI-MEEPO\n# X\n", null, false);
+        assertTrue(Parser.markHiMeepo(context));
+        context.edge0 = context.edge1;
+        assertFalse(Parser.markHiMeepo(context));
+        assertTrue(Parser.findXnaGrp(context, "X"));
+        assertEquals("X", context.txt.substring(context.main0, context.main1));
+    }
+
+    @Test
+    void malformedDirectivesArePreservedInLaxModeAndRejectedInStrictMode() {
+        for (String directive : Arrays.asList("DNA:BKB", "DNA:END", "RNA:ELSE", "RNA:DONE",
+            "DNA:SET", "RNA:RUN", "RNA:USE", "RNA:PUT", "RNA:WHEN", "RNA:EACH",
+            "DNA:SET /x", "RNA:RUN /x", "RNA:USE /x", "RNA:PUT /x", "RNA:WHEN /x", "RNA:EACH /x",
+            "RNA:EACH /1/items/", "RNA:EACH /0/items/it", "RNA:EACH /x/items/it",
+            "RNA:WHEN //flag/bg", "RNA:WHEN /maybe/flag/bg", "RNA:WHEN /yes/flag/")) {
+            String input = "# HI-MEEPO\n# " + directive + "\n";
+            assertThrows(IllegalStateException.class, () -> Parser.parse(input), directive);
+            assertEquals("# " + directive + "\n", Parser.parse(input, true).merge(Collections.emptyMap()), directive);
+        }
+    }
+
+    @Test
+    void incompleteBlocksAndUnknownEngines() {
+        assertThrows(IllegalStateException.class, () -> Parser.parse("# HI-MEEPO\n# RNA:EACH /1/items/it\nbody\n"));
+        String input = "# HI-MEEPO\n# RNA:RUN unknown//expr/\n";
+        assertThrows(IllegalStateException.class, () -> Parser.parse(input));
+        assertNotNull(Parser.parse(input, true));
+        assertEquals("<!-- DNA:SET /x/y/", Parser.parse("<!-- HI-MEEPO -->\n<!-- DNA:SET /x/y/").merge(Collections.emptyMap()));
+        assertEquals("x HI-MEEPO tail other", Parser.parse("x HI-MEEPO tail other").build());
+        assertEquals("# DNA:UNKNOWN\n", Parser.parse("# HI-MEEPO\n# DNA:UNKNOWN\n").merge(Collections.emptyMap()));
+        assertEquals("# RNA:UNKNOWN\n", Parser.parse("# HI-MEEPO\n# RNA:UNKNOWN\n").merge(Collections.emptyMap()));
+        assertEquals("x\n# DNA:END other\ny\n", Parser.parse("# HI-MEEPO\n# DNA:BKB b\nx\n# DNA:END other\ny\n# DNA:END b\n").merge(Collections.emptyMap()));
+        assertNotNull(Parser.parse("# HI-MEEPO\n# DNA:END x #ignored\n"));
+        assertTrue(new Parser.G("test", "it", new ArrayList<>()).toString().contains("test"));
+    }
+
+    @Test
+    void baseExonAndContextEdges() {
+        Exon ex = new Exon("x", new Clop(0, 1, 1, 1));
+        assertEquals(Life.State.Skip, ex.match(new ArrayList<>(), "x"));
+        assertTrue(ex.apply(new Clop(0, 0, 1, 1), "", 0).isEmpty());
+        Parser.Ctx ctx = new Parser.Ctx("text", null, false);
+        Parser.dealTxtPlain(ctx, 2, Parser.SkipThis);
+        assertEquals(0, ctx.done1);
+        ctx.bkbs.add("b");
+        Parser.dealTxtPlain(ctx, 2, ex);
+        assertEquals(0, ctx.done1);
+    }
+
+    @Test
+    public void testCross() {
+        String tmpl = "// HI-MEEPO\n"
+                      + "// RNA:WHEN /yes/GitHash/bg\n"
+                      + "//   RNA:USE /hash/GitHash/\n"
+                      + "// RNA:ELSE bg\n"
+                      + "//   RNA:USE /hash/ModTime/\n"
+                      + "// RNA:DONE bg\n"
+                      + "project hash";
+
+        try {
+            Parser.parse(tmpl);
+            Assertions.fail();
+        }
+        catch (Exception e) {
+            logger.info("test exception", e);
+        }
     }
 }

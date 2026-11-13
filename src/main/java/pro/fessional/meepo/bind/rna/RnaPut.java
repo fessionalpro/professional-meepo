@@ -16,6 +16,9 @@ import java.io.Writer;
 import java.util.Map;
 
 /**
+ * RNA:PUT evaluates an engine expression during each merge and stores the result
+ * in that merge's context, without writing the value to the output.
+ *
  * <pre>
  * ` &lt;% RNA:PUT os/who/basename $(pwd)/ %&gt; \n`
  * edge=`&lt;% RNA:PUT os/who/basename $(pwd)/ %&gt;`

@@ -8,12 +8,13 @@ import pro.fessional.meepo.poof.RnaManager;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
-
-import static java.util.stream.Collectors.toMap;
 
 /**
- * Executed in single thread
+ * Acid, short for nucleic acid, is the reaction context for one execution of a Gene.
+ * <p>Owns copied input bindings, a snapshot of registered functions, forked RNA
+ * engines and the winning branch for each named Tock. One merge uses one Acid
+ * in one thread, then clears it; separate merges never share these mutable maps.
+ * Values inside the input map are copied by reference.</p>
  *
  * @author trydofor
  * @since 2020-11-02
@@ -28,18 +29,17 @@ public class Acid {
     private final Map<String, RnaEngine> engines;
 
     /**
-     * Create a new context, and copy ctx (putAll) and rng (new) into it.
+     * Copy caller bindings over the current function snapshot and create the
+     * engine instances required by the gene. The caller's map is not modified.
      *
      * @param ctx the context copy from
      * @param rng the engine name
      */
     public Acid(Map<String, Object> ctx, Set<String> rng) {
         this.execute = new HashMap<>();
-        this.context = new HashMap<>(ctx.size() + RnaManager.getFunctionCount());
-        this.engines = rng.stream().collect(toMap(Function.identity(), RnaManager::newEngine));
-        //
-        RnaManager.putFunction(this.context);
-        context.putAll(ctx);
+        this.context = new Cmap(RnaManager.getFunctionSnapshot(), ctx);
+        this.engines = new HashMap<>();
+        for (String type : rng) engines.put(type, RnaManager.newEngine(type));
     }
 
     public RnaEngine getEngine(String type) {

@@ -41,6 +41,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.regex.Pattern;
+import java.nio.charset.Charset;
+import java.io.InputStream;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 import static pro.fessional.meepo.bind.Const.ENGINE$MAP;
 import static pro.fessional.meepo.bind.Const.TKN$DNA_;
@@ -62,13 +66,14 @@ import static pro.fessional.meepo.bind.Const.TKN$WHEN_NOT;
 import static pro.fessional.meepo.bind.Const.TKN$WHEN_YES;
 
 /**
- * <pre>
- * Meepo template parser, thead safe.
- *
- * When syntax errors are found in the directive,
- * `lax` mode to log as warn and treat as plain text,
- * `strict` mode to throw exceptions
- * </pre>
+ * Parses target-language comments into a reusable {@link Gene}.
+ * <p>HI-MEEPO supplies comment boundaries. DNA transforms source text during
+ * parsing; RNA is warmed and retained as executable exons for merging. In
+ * particular RNA:USE/RUN select their replacement positions now, so runtime
+ * WHEN/EACH branches cannot change how those positions were matched.</p>
+ * <p>Static entry points are thread-safe because each call creates its own
+ * mutable {@link Ctx}. Lax mode retains malformed directives as text where
+ * recovery is supported; strict mode reports them as parse failures.</p>
  *
  * @author trydofor
  * @since 2020-10-15
@@ -127,8 +132,23 @@ public class Parser {
      */
     @Contract("null,_,_->null;!null,_,_->!null")
     public static Gene parse(String txt, String pwd, boolean lax) {
+        return parse(txt, pwd, lax, UTF_8);
+    }
+
+    /**
+     * Decode bytes once at the input boundary; included resources use the same charset.
+     */
+    public static Gene parse(InputStream input, Charset charset) {
+        return parse(Read.read(input, charset), null, false, charset);
+    }
+
+    /**
+     * The text is already decoded; charset is used only when loading included resources.
+     */
+    @Contract("null,_,_,_->null;!null,_,_,_->!null")
+    public static Gene parse(String txt, String pwd, boolean lax, Charset charset) {
         if (txt == null) return null;
-        final Ctx ctx = new Ctx(txt, pwd, lax);
+        final Ctx ctx = new Ctx(txt, pwd, lax, charset);
 
         parse(ctx);
 
@@ -374,7 +394,7 @@ public class Parser {
         else {
             edge1 = main1 + meepo.tail.length();
             int grace = Seek.seekPrevGrace(text, main0, main1);
-            if (grace > main0 && grace < main1) {
+            if (grace > main0) { // seekPrevGrace scans strictly before main1.
                 main1 = grace + 1;
             }
         }
@@ -490,7 +510,7 @@ public class Parser {
             note = "without split-bar";
         }
         else {
-            pos3 = new int[]{spl0, -1, -1};
+            pos3 = new int[]{ spl0, -1, -1 };
             note = parseSplit(txt, pos3, ctx.main1);
         }
 
@@ -537,7 +557,7 @@ public class Parser {
             int[] typ2 = Seek.seekNextAlnum(txt, off, spl0);
             mute = parseMute(txt, typ2);
             type = parseType(txt, typ2);
-            pos3 = new int[]{spl0, -1, -1};
+            pos3 = new int[]{ spl0, -1, -1 };
             note = parseSplit(txt, pos3, ctx.main1);
         }
 
@@ -578,7 +598,7 @@ public class Parser {
             note = "Bad-Syntax RNA:USE, without split-bar";
         }
         else {
-            pos3 = new int[]{spl0, -1, -1};
+            pos3 = new int[]{ spl0, -1, -1 };
             note = parseSplit(txt, pos3, ctx.main1);
         }
 
@@ -624,7 +644,7 @@ public class Parser {
             int[] typ2 = Seek.seekNextAlnum(txt, off, spl0);
             mute = parseMute(txt, typ2);
             type = parseType(txt, typ2);
-            pos3 = new int[]{spl0, -1, -1};
+            pos3 = new int[]{ spl0, -1, -1 };
             note = parseSplit(txt, pos3, ctx.main1);
         }
 
@@ -669,7 +689,7 @@ public class Parser {
             int[] typ2 = Seek.seekNextAlnum(txt, off, spl0);
             mute = parseMute(txt, typ2);
             type = parseType(txt, typ2);
-            pos3 = new int[]{spl0, -1, -1};
+            pos3 = new int[]{ spl0, -1, -1 };
             note = parseSplit(txt, pos3, ctx.main1);
         }
 
@@ -679,10 +699,10 @@ public class Parser {
             if (yn.isEmpty()) {
                 note = "control is empty, need " + TKN$WHEN_YES + "|" + TKN$WHEN_NOT;
             }
-            else if (TKN$WHEN_YES.contains(yn)) {
+            else if ("y".equals(yn) || "yes".equals(yn)) {
                 // IGNORE nope = false;
             }
-            else if (TKN$WHEN_NOT.contains(yn)) {
+            else if ("n".equals(yn) || "no".equals(yn) || "not".equals(yn)) {
                 nope = true;
             }
             else {
@@ -738,7 +758,7 @@ public class Parser {
             int[] typ2 = Seek.seekNextAlnum(txt, off, spl0);
             mute = parseMute(txt, typ2);
             type = parseType(txt, typ2);
-            pos3 = new int[]{spl0, -1, -1};
+            pos3 = new int[]{ spl0, -1, -1 };
             note = parseSplit(txt, pos3, ctx.main1);
         }
 
@@ -872,7 +892,7 @@ public class Parser {
         }
         else {
             tail = "\n";
-            if (tl[1] < txt.length() && txt.charAt(tl[1]) == '\n') {
+            if (tl[1] < txt.length()) { // An empty tail word inside the input ends at LF.
                 tl[1] = tl[1] + 1;
             }
         }
@@ -988,6 +1008,9 @@ public class Parser {
 
     ////////////
 
+    /**
+     * One open gene-group frame; the bottom frame is the template root.
+     */
     protected static class G {
         protected final String type;
         protected final String tock;
@@ -1010,7 +1033,9 @@ public class Parser {
     }
 
     /**
-     * Naming convention: 0 - start point, include; 1 - end point, exclude;
+     * Mutable context for one parse, never shared between parser calls.
+     * Suffix 0 denotes an inclusive start, and 1 an exclusive end; edge includes
+     * the comment delimiters, while main contains the directive inside them.
      */
     protected static class Ctx {
         protected final String txt; // template raw text
@@ -1024,9 +1049,12 @@ public class Parser {
         protected int main1 = -1; // to parse directive end point (exclude)
         protected int edge1 = -1; // to parse block end point (exclude)
         protected HiMeepo meepo = null; // current scope Meepo
+        protected final Charset inputCharset;
 
+        // Open WHEN/EACH/ELSE groups; completed children stay in their parent's gene.
         protected final ArrayDeque<G> tree = new ArrayDeque<>();
 
+        // DNA immunity, active text processors, and named parse-time lifetimes.
         protected final HashSet<String> bkbs = new HashSet<>();
         protected final ArrayList<Exon> proc = new ArrayList<>();
         protected final HashMap<String, Life> life = new HashMap<>();
@@ -1034,12 +1062,19 @@ public class Parser {
         protected final StringBuilder errs = new StringBuilder();
         protected final RngChecker rngs = new RngChecker();
         protected final ArrayList<RuntimeException> fail = new ArrayList<>();
+        protected final Set<String> includes = new HashSet<>();
 
         public Ctx(String txt, String pwd, boolean lax) {
+            this(txt, pwd, lax, UTF_8);
+        }
+
+        public Ctx(String txt, String pwd, boolean lax, Charset charset) {
+            inputCharset = charset == null ? UTF_8 : charset;
             this.txt = txt;
             this.pwd = pwd;
             this.end = txt.length();
             this.lax = lax;
+            if (pwd != null) includes.add(Read.identity(Read.resolve(pwd, null)));
 
             tree.offerLast(new G("ROOT", Const.TXT$EMPTY, new ArrayList<>()));
 
@@ -1102,7 +1137,7 @@ public class Parser {
                 }
             }
 
-            // adjust gene stack - start
+            // Bind runtime groups while parsing; merging traverses the finished tree.
             if (exon instanceof RnaDone) {
                 RnaDone rna = (RnaDone) exon;
                 Set<String> done = rna.name;
@@ -1146,8 +1181,12 @@ public class Parser {
                 String clz = exon.getClass().getSimpleName();
                 logger.trace("[👹Parse:procExon] append {}, and parse sons", clz);
                 DnaSon ds = (DnaSon) exon;
-                final String sub = Read.read(ds.path, pwd);
-                Ctx son = new Ctx(sub, ds.path, lax);
+                final String path = Read.resolve(ds.path, pwd);
+                if (includes.contains(Read.identity(path)))
+                    throw new IllegalStateException("recursive DNA:SON include: " + path);
+                final String sub = Read.read(path, null, inputCharset);
+                Ctx son = new Ctx(sub, path, lax, inputCharset);
+                son.includes.addAll(includes);
                 parse(son);
                 son.okGene();
                 List<Exon> gns = son.getGene();
@@ -1200,6 +1239,8 @@ public class Parser {
                 }
             }
 
+            // Match every active processor against the same source slice first.
+            // Apply disjoint spans once, so replacement text is not matched again.
             Collections.sort(rst);
             int off = 0;
             for (Exon.N n : rst) {
@@ -1258,9 +1299,8 @@ public class Parser {
 
         public Gene toGene() {
             okGene();
-            G g = tree.pollLast();
-            assert g != null;
-            return new Gene(g.gene, rngs.getCheckedEngine());
+            G g = tree.removeLast(); // Required root: fail even when JVM assertions are disabled.
+            return Gene.parsed(g.gene, rngs.getCheckedEngine());
         }
 
         private Clop newClop(int start, int until) {

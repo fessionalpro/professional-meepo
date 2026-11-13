@@ -8,6 +8,10 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
+ * Parse-local RNA engine checker; Rng abbreviates RNA engine, not a numeric range.
+ * Caches warm-up plans by engine alias and expression, and records the engine
+ * types a Gene will need when it creates a fresh Acid for merging.
+ *
  * @author trydofor
  * @since 2020-11-05
  */
@@ -79,10 +83,12 @@ public class RngChecker {
     private static class Key {
         private final String type;
         private final String expr;
+        private final int hash;
 
         public Key(String type, String expr) {
             this.type = type;
             this.expr = expr;
+            this.hash = 31 * Objects.hashCode(type) + Objects.hashCode(expr);
         }
 
         @Override
@@ -96,7 +102,7 @@ public class RngChecker {
 
         @Override
         public int hashCode() {
-            return Objects.hash(type, expr);
+            return hash;
         }
     }
 }

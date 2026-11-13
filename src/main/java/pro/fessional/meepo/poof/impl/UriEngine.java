@@ -21,7 +21,7 @@ public class UriEngine implements RnaEngine {
 
     private static final Logger logger = LoggerFactory.getLogger(UriEngine.class);
 
-    private static final String[] TYPE = {ENGINE$URI};
+    private static final String[] TYPE = { ENGINE$URI };
 
     @Override
     public @NotNull String[] type() {

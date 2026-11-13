@@ -17,6 +17,10 @@ import java.io.StringWriter;
 import java.io.Writer;
 
 /**
+ * RNA:WHEN is a runtime conditional branch in a named Tock group.
+ * A prior winning branch suppresses evaluation; this branch records itself only
+ * when its condition succeeds, so later WHEN/ELSE nodes can short-circuit.
+ *
  * <pre>
  * ` &lt;% RNA:WHEN os/not/basename $(pwd)/pwd %&gt; \n`
  * edge=`&lt;% RNA:WHEN os/not/basename $(pwd)/pwd %&gt;`
@@ -61,6 +65,7 @@ public class RnaWhen extends Tock implements Rng {
     public void merge(Acid acid, Writer buff) {
         final Tock th = this;
         Tock tk = acid.execute.compute(tock, (s, t) -> {
+            // A previous branch already won: do not evaluate this expression again.
             if (t != null) return t;
 
             RnaEngine eng = acid.getEngine(type);

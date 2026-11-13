@@ -1,6 +1,10 @@
 package pro.fessional.meepo.util;
 
 /**
+ * Character-scanning helpers for the hand-written template parsers.
+ * Offsets use half-open ranges; these methods distinguish line boundaries from
+ * horizontal whitespace without tokenizing the target language.
+ *
  * @author trydofor
  * @since 2020-10-16
  */
@@ -31,7 +35,7 @@ public class Seek {
                 }
             }
         }
-        return -1;
+        return fd ? end - tln : -1;
     }
 
     public static int seekFollow(String txt, int off, int end, String tkn) {
@@ -106,7 +110,7 @@ public class Seek {
     }
 
     public static int[] seekPrevWords(CharSequence txt, int off, int end) {
-        if (off < 0 || end < 0) return new int[]{-1, -1};
+        if (off < 0 || end < 0) return new int[]{ -1, -1 };
 
         int pos1, pos0;
         for (pos1 = end - 1; pos1 >= off; pos1--) {
@@ -121,11 +125,11 @@ public class Seek {
             }
         }
 
-        return new int[]{pos0 + 1, pos1 + 1};
+        return new int[]{ pos0 + 1, pos1 + 1 };
     }
 
     public static int[] seekNextWords(CharSequence txt, int off, int end) {
-        if (off < 0 || end < 0) return new int[]{-1, -1};
+        if (off < 0 || end < 0) return new int[]{ -1, -1 };
 
         int pos0, pos1;
         for (pos0 = off; pos0 < end; pos0++) {
@@ -140,7 +144,7 @@ public class Seek {
             }
         }
 
-        return new int[]{pos0, pos1};
+        return new int[]{ pos0, pos1 };
     }
 
     public static int seekNextSplit(CharSequence txt, int off, int end) {
@@ -153,7 +157,7 @@ public class Seek {
     }
 
     public static int[] seekNextAlnum(CharSequence txt, int off, int end) {
-        if (off < 0 || end < 0) return new int[]{-1, -1};
+        if (off < 0 || end < 0) return new int[]{ -1, -1 };
 
         int pos0, pos1;
         for (pos0 = off; pos0 < end; pos0++) {
@@ -168,25 +172,14 @@ public class Seek {
             }
         }
 
-        return new int[]{pos0, pos1};
+        return new int[]{ pos0, pos1 };
     }
 
 
     public static int[] trimBlank(CharSequence txt, int off, int end) {
-        for (int i = off; i < end; i++) {
-            if (notBlank(txt.charAt(i))) {
-                off = i;
-                break;
-            }
-        }
-        for (int i = end - 1; i > off; i--) {
-            if (notBlank(txt.charAt(i))) {
-                end = i + 1;
-                break;
-            }
-        }
-
-        return new int[]{off, end};
+        while (off < end && !notBlank(txt.charAt(off))) off++;
+        while (end > off && !notBlank(txt.charAt(end - 1))) end--;
+        return new int[]{ off, end };
     }
 
     /**
@@ -288,11 +281,11 @@ public class Seek {
         for (int ln = tkn.length(), i = end - 1; i >= off; i--) {
             if (txt.regionMatches(i, tkn, 0, ln)) {
                 int ct = countPrevToken(txt, i, esc);
-                return new int[]{i, ct};
+                return new int[]{ i, ct };
             }
         }
 
-        return new int[]{-1, 0};
+        return new int[]{ -1, 0 };
     }
 
     /**
@@ -309,9 +302,9 @@ public class Seek {
         for (int ln = tkn.length(), i = off; i < end; i++) {
             if (txt.regionMatches(i, tkn, 0, ln)) {
                 int ct = countPrevToken(txt, i, esc);
-                return new int[]{i, ct};
+                return new int[]{ i, ct };
             }
         }
-        return new int[]{-1, 0};
+        return new int[]{ -1, 0 };
     }
 }

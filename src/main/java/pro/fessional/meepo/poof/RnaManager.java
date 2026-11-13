@@ -17,6 +17,8 @@ import pro.fessional.meepo.poof.impl.java.JavaEngine;
 import pro.fessional.meepo.poof.impl.map.MapEngine;
 
 import java.util.Map;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -26,7 +28,9 @@ import static pro.fessional.meepo.eval.FunEnv.ENV$NOW_DATE;
 import static pro.fessional.meepo.eval.FunEnv.ENV$NOW_TIME;
 
 /**
- * RnaEngine factory
+ * Registry and factory for RNA engine prototypes and default functions.
+ * Engines are forked for use; function registration publishes an immutable map
+ * snapshot so an Acid can inherit defaults without copying every function.
  *
  * @author trydofor
  * @since 2020-10-15
@@ -37,6 +41,7 @@ public class RnaManager {
 
     private static final ConcurrentHashMap<String, RnaEngine> engines = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<String, Object> functions = new ConcurrentHashMap<>();
+    private static volatile Map<String, Object> functionSnapshot = Collections.emptyMap();
 
     private static final AtomicReference<RnaEngine> defaultEngine = new AtomicReference<>();
     private static volatile int engCount = 0;
@@ -118,7 +123,14 @@ public class RnaManager {
      * Put functions to the context
      */
     public static void putFunction(Map<String, Object> ctx) {
-        ctx.putAll(functions);
+        ctx.putAll(functionSnapshot);
+    }
+
+    /**
+     * Immutable snapshot; later registrations do not affect an existing merge.
+     */
+    public static Map<String, Object> getFunctionSnapshot() {
+        return functionSnapshot;
     }
 
     /**
@@ -154,18 +166,20 @@ public class RnaManager {
     /**
      * Register a function with its name
      */
-    private static void register(String name, Object fun, String info) {
+    private static synchronized void register(String name, Object fun, String info) {
         Object old = functions.put(name, fun);
         if (old == null) {
             logger.info("register function for name={}, info={}", name, info);
         }
         else if (fun == old) {
             logger.info("skip same function for name={}, info={}", name, info);
+            return;
         }
         else {
             logger.info("replace function for name={}, info={}", name, info);
         }
         funCount = functions.size();
+        functionSnapshot = Collections.unmodifiableMap(new HashMap<>(functions));
     }
 
     /**

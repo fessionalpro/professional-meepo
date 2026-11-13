@@ -15,6 +15,7 @@ import static pro.fessional.meepo.eval.FunEnv.FUN$BIG_KEBAB;
 import static pro.fessional.meepo.eval.FunEnv.FUN$BIG_KEBAB_1;
 import static pro.fessional.meepo.eval.FunEnv.FUN$BIG_SNAKE;
 import static pro.fessional.meepo.eval.FunEnv.FUN$BIG_SNAKE_1;
+import static pro.fessional.meepo.eval.FunEnv.FUN$BIG_SNAKE_2;
 import static pro.fessional.meepo.eval.FunEnv.FUN$CAMEL_CASE;
 import static pro.fessional.meepo.eval.FunEnv.FUN$DOT_CASE;
 import static pro.fessional.meepo.eval.FunEnv.FUN$KEBAB_CASE;
@@ -35,7 +36,7 @@ public class Case {
     public static final NameEval funCamelCase = new NameEval() {
         @Override
         public @NotNull String[] name() {
-            return new String[]{FUN$CAMEL_CASE};
+            return new String[]{ FUN$CAMEL_CASE };
         }
 
         @Override
@@ -53,7 +54,7 @@ public class Case {
     public static final NameEval funPascalCase = new NameEval() {
         @Override
         public @NotNull String[] name() {
-            return new String[]{FUN$PASCAL_CASE, FUN$PASCAL_CASE_1};
+            return new String[]{ FUN$PASCAL_CASE, FUN$PASCAL_CASE_1 };
         }
 
         @Override
@@ -71,7 +72,7 @@ public class Case {
     public static final NameEval funSnakeCase = new NameEval() {
         @Override
         public @NotNull String[] name() {
-            return new String[]{FUN$SNAKE_CASE, FUN$SNAKE_CASE_1};
+            return new String[]{ FUN$SNAKE_CASE, FUN$SNAKE_CASE_1 };
         }
 
         @Override
@@ -89,7 +90,7 @@ public class Case {
     public static final NameEval funBigSnake = new NameEval() {
         @Override
         public @NotNull String[] name() {
-            return new String[]{FUN$BIG_SNAKE, FUN$BIG_SNAKE_1};
+            return new String[]{ FUN$BIG_SNAKE, FUN$BIG_SNAKE_1, FUN$BIG_SNAKE_2 };
         }
 
         @Override
@@ -107,7 +108,7 @@ public class Case {
     public static final NameEval funKebabCase = new NameEval() {
         @Override
         public @NotNull String[] name() {
-            return new String[]{FUN$KEBAB_CASE, FUN$KEBAB_CASE_1};
+            return new String[]{ FUN$KEBAB_CASE, FUN$KEBAB_CASE_1 };
         }
 
         @Override
@@ -125,7 +126,7 @@ public class Case {
     public static final NameEval funBigKebab = new NameEval() {
         @Override
         public @NotNull String[] name() {
-            return new String[]{FUN$BIG_KEBAB, FUN$BIG_KEBAB_1};
+            return new String[]{ FUN$BIG_KEBAB, FUN$BIG_KEBAB_1 };
         }
 
         @Override
@@ -143,7 +144,7 @@ public class Case {
     public static final NameEval funDotCase = new NameEval() {
         @Override
         public @NotNull String[] name() {
-            return new String[]{FUN$DOT_CASE};
+            return new String[]{ FUN$DOT_CASE };
         }
 
         @Override
@@ -162,7 +163,7 @@ public class Case {
     public static final NameEval funUpperCase = new NameEval() {
         @Override
         public @NotNull String[] name() {
-            return new String[]{FUN$UPPER_CASE};
+            return new String[]{ FUN$UPPER_CASE };
         }
 
         @Override
@@ -174,7 +175,7 @@ public class Case {
         public Object eval(@NotNull Map<String, Object> ctx, Object obj, Object... arg) {
             if (obj == null) return "";
             String txt = obj.toString();
-            if (arg.length > 1) {
+            if (arg.length > 0) {
                 Locale loc = Locale.forLanguageTag(arg[0].toString());
                 return txt.toUpperCase(loc);
             }
@@ -187,7 +188,7 @@ public class Case {
     public static final NameEval funLowerCase = new NameEval() {
         @Override
         public @NotNull String[] name() {
-            return new String[]{FUN$LOWER_CASE};
+            return new String[]{ FUN$LOWER_CASE };
         }
 
         @Override
@@ -199,7 +200,7 @@ public class Case {
         public Object eval(@NotNull Map<String, Object> ctx, Object obj, Object... arg) {
             if (obj == null) return "";
             String txt = obj.toString();
-            if (arg.length > 1) {
+            if (arg.length > 0) {
                 Locale loc = Locale.forLanguageTag(arg[0].toString());
                 return txt.toLowerCase(loc);
             }
@@ -276,7 +277,7 @@ public class Case {
         for (int i = 0, len = str.length(); i < len; i++) {
             char c = str.charAt(i);
             if (isJavaIdentifierPart(c)) {
-                if (c == '_' || c == '-') {
+                if (c == '_') { // '-' is handled by the non-identifier branch below.
                     flag = 1;
                 }
                 else {
@@ -329,7 +330,7 @@ public class Case {
         for (int i = 0, len = str.length(); i < len; i++) {
             char c = str.charAt(i);
             if (isJavaIdentifierPart(c)) {
-                if (c == '_' || c == '-') {
+                if (c == '_') {
                     flag = 1;
                 }
                 else {
@@ -359,7 +360,7 @@ public class Case {
         return sb.toString();
     }
 
-    ///////
+    /// ////
     private static Type caseType(Object[] arg) {
         if (arg != null && arg.length > 0 && arg[0] != null) {
             String str = arg[0].toString();

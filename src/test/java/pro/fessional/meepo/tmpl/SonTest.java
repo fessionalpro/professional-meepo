@@ -14,7 +14,7 @@ public class SonTest extends TraceTest {
     @Test
     public void imp() {
         Map<String, Object> ctx = new HashMap<>();
-        ctx.put("gmail","gmail.com");
+        ctx.put("gmail", "gmail.com");
         TmplHelp.assertTmpl("/template/son/include-o.htm", "/template/son/include-i1.htm", ctx);
         TmplHelp.assertTmpl("/template/son/include-o.htm", "/template/son/include-i2.htm", ctx);
     }

@@ -11,6 +11,8 @@ import java.io.StringWriter;
 import java.io.Writer;
 
 /**
+ * Unchanged template text, retained as an exon and written on every merge.
+ *
  * <pre>
  * ` plain text \n`
  * edge=` plain text \n`

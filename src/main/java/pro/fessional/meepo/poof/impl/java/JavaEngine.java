@@ -33,7 +33,7 @@ public class JavaEngine implements RnaEngine {
     public static final int KIND_FUN = 2;
 
     private static final Logger logger = LoggerFactory.getLogger(JavaEngine.class);
-    private static final String[] TYPE = {ENGINE$JAVA, ENGINE$FUN};
+    private static final String[] TYPE = { ENGINE$JAVA, ENGINE$FUN };
     private static final ConcurrentHashMap<String, JavaEval> ExprEval = new ConcurrentHashMap<>();
 
     @Override
@@ -78,7 +78,7 @@ public class JavaEngine implements RnaEngine {
         return new RnaWarmed(type, expr, eval, kind);
     }
 
-    private static final Pattern PtnImps = Pattern.compile("\\s*import\\s+[^;]+;\\s*", Pattern.MULTILINE);
+    private static final Pattern PtnImps = Pattern.compile("\\G\\s*import\\s+[^;]+;\\s*");
     private static final AtomicInteger Counter = new AtomicInteger(0);
 
     private JavaEval compile(String expr) {

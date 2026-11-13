@@ -8,7 +8,6 @@ import pro.fessional.meepo.util.Eval;
 import pro.fessional.meepo.util.Eval.ArgType;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -18,6 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import static pro.fessional.meepo.bind.Const.ARR$EMPTY_OBJECT;
 import static pro.fessional.meepo.bind.Const.ARR$EMPTY_STRING;
+import static pro.fessional.meepo.eval.FunEnv.KEY$PREFIX;
 
 /**
  * @author trydofor
@@ -25,7 +25,13 @@ import static pro.fessional.meepo.bind.Const.ARR$EMPTY_STRING;
  */
 public class MapHelper {
 
-    private static final ConcurrentHashMap<Key, Member> MEMBER = new ConcurrentHashMap<>();
+    private static final Object MISSING = new Object();
+    private static final ClassValue<ConcurrentHashMap<String, Object>> MEMBER = new ClassValue<ConcurrentHashMap<String, Object>>() {
+        @Override
+        protected ConcurrentHashMap<String, Object> computeValue(Class<?> type) {
+            return new ConcurrentHashMap<>();
+        }
+    };
     private static final ConcurrentHashMap<String, String[]> NAVEXP = new ConcurrentHashMap<>();
 
     public static final int KIND_PURE = 1;
@@ -41,16 +47,16 @@ public class MapHelper {
 
         Iterator<String> it = pipes.iterator();
         String key = it.next();
-        ArrayList<String> navi = Eval.split(key, Const.OBJ$NAVI_DOT);
-        if (navi.size() > 1) {
-            work.add(new RnaWarmed(type, key, navi.toArray(ARR$EMPTY_STRING), KIND_NAVI));
+        List<Object> args = Eval.parseArgs(key, ArgType.Obj);
+        if (args.size() > 1) {
+            String cmd = args.get(0).toString();
+            Object[] arg = args.subList(1, args.size()).toArray();
+            work.add(new Fun(type, cmd, arg));
         }
         else {
-            List<Object> args = Eval.parseArgs(key, ArgType.Obj);
-            if (args.size() > 1) {
-                String cmd = args.get(0).toString();
-                Object[] arg = args.subList(1, args.size()).toArray();
-                work.add(new RnaWarmed(type, cmd, arg, KIND_FUNC));
+            ArrayList<String> navi = Eval.split(key, Const.OBJ$NAVI_DOT);
+            if (navi.size() > 1) {
+                work.add(new RnaWarmed(type, key, navi.toArray(ARR$EMPTY_STRING), KIND_NAVI));
             }
             else {
                 work.add(new RnaWarmed(type, key, ARR$EMPTY_STRING, KIND_PURE));
@@ -64,10 +70,29 @@ public class MapHelper {
             if (pipe.size() > 1) {
                 arg = pipe.subList(1, pipe.size()).toArray();
             }
-            work.add(new RnaWarmed(type, cmd, arg, KIND_FUNC));
+            work.add(new Fun(type, cmd, arg));
         }
 
         return new RnaWarmed(type, expr, work);
+    }
+
+    private static final class Fun extends RnaWarmed {
+        private final String alias;
+
+        private Fun(String type, String expr, Object[] args) {
+            super(type, expr, args, KIND_FUNC);
+            alias = expr.startsWith(KEY$PREFIX) ? expr : KEY$PREFIX + expr;
+        }
+    }
+
+    /**
+     * Returns the original expression by reference when it already has the prefix.
+     * Callers use this identity to skip looking up the same key twice.
+     */
+    static String functionKey(RnaWarmed step) {
+        if (step instanceof Fun) return ((Fun) step).alias;
+        // Also accept execution plans constructed by callers of the public API.
+        return step.expr.startsWith(KEY$PREFIX) ? step.expr : KEY$PREFIX + step.expr;
     }
 
     public static Object arg(Object ctx, CharSequence expr, boolean nil) {
@@ -145,7 +170,9 @@ public class MapHelper {
     private static Object byBean(Object ctx, String key) {
         Object obj;
         final Class<?> clz = ctx.getClass();
-        Object ref = MEMBER.computeIfAbsent(new Key(clz, key), k -> {
+        ConcurrentHashMap<String, Object> members = MEMBER.get(clz);
+        Object ref = members.get(key);
+        if (ref == null) ref = members.computeIfAbsent(key, k -> {
             for (Method md : clz.getMethods()) {
                 if (md.getParameterCount() != 0) continue;
 
@@ -163,7 +190,7 @@ public class MapHelper {
                     return fd;
                 }
             }
-            return null;
+            return MISSING;
         });
 
         try {
@@ -191,28 +218,4 @@ public class MapHelper {
                && name.regionMatches(of + 1, prop, 1, pl - 1);
     }
 
-    private static class Key {
-        private final Class<?> claz;
-        private final String attr;
-        private final int hash;
-
-        public Key(Class<?> claz, String attr) {
-            this.claz = claz;
-            this.attr = attr;
-            this.hash = claz.hashCode() + 31 * attr.hashCode();
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            Key key = (Key) o;
-            return claz.equals(key.claz) && attr.equals(key.attr);
-        }
-
-        @Override
-        public int hashCode() {
-            return hash;
-        }
-    }
 }

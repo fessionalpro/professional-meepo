@@ -4,6 +4,7 @@ import org.jetbrains.annotations.NotNull;
 import pro.fessional.meepo.bind.wow.Clop;
 import pro.fessional.meepo.bind.wow.Life;
 import pro.fessional.meepo.bind.wow.Tick;
+import pro.fessional.meepo.pack.Utxt;
 import pro.fessional.meepo.util.Dent;
 
 import java.io.IOException;
@@ -11,6 +12,9 @@ import java.io.StringWriter;
 import java.io.Writer;
 
 /**
+ * DNA:BKB starts a named parse-time immunity region. BKB refers to Black King Bar.
+ * Text and directives inside the region stay literal until the matching DNA:END.
+ *
  * <pre>
  * ` &lt;% DNA:BKB BlackKingBar %&gt; \n`
  * edge=`&lt;% DNA:BKB BlackKingBar %&gt;`
@@ -29,12 +33,12 @@ public class DnaBkb extends Tick {
 
     @NotNull
     public final String name;
-    private final char[] name9;
+    private final Utxt name9;
 
     public DnaBkb(String text, Clop edge, @NotNull String name) {
         super(text, edge, Life.namedAny(name));
         this.name = name;
-        this.name9 = name.toCharArray();
+        this.name9 = new Utxt(name.toCharArray());
     }
 
     @Override

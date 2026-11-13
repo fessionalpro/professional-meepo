@@ -20,7 +20,7 @@ public class Cal {
     public static final NameEval funMod = new NameEval() {
         @Override
         public @NotNull String[] name() {
-            return new String[]{FUN$MOD};
+            return new String[]{ FUN$MOD };
         }
 
         @Override
@@ -44,7 +44,8 @@ public class Cal {
                 num = new BigDecimal(obj.toString()).intValue();
             }
 
-            final Object k = arg[num % arg.length];
+            if (arg.length == 0) throw new IllegalArgumentException("mod needs at least one argument");
+            final Object k = arg[Math.floorMod(num, arg.length)];
             if (k instanceof CharSequence) {
                 return MapHelper.arg(ctx, (CharSequence) k, false);
             }
@@ -57,7 +58,7 @@ public class Cal {
     public static final NameEval funAbs = new NameEval() {
         @Override
         public @NotNull String[] name() {
-            return new String[]{FUN$ABS};
+            return new String[]{ FUN$ABS };
         }
 
         @Override
@@ -72,11 +73,12 @@ public class Cal {
             }
 
             if (obj instanceof Boolean) {
-                return (Boolean) obj ? 0L : 1L;
+                return (Boolean) obj ? 1L : 0L;
             }
 
             if (obj instanceof Byte || obj instanceof Short || obj instanceof Integer || obj instanceof Long) {
-                return Math.abs(((Number) obj).longValue());
+                long value = ((Number) obj).longValue();
+                return value == Long.MIN_VALUE ? new BigDecimal(value).abs() : Math.abs(value);
             }
 
             return new BigDecimal(obj.toString()).abs();

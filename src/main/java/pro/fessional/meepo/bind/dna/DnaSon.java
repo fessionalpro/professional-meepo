@@ -14,6 +14,9 @@ import java.io.Writer;
 import java.util.ArrayList;
 
 /**
+ * DNA:SON includes and parses a child template relative to its containing template.
+ * Inclusion happens during parsing; merging reuses the resulting child exons.
+ *
  * <pre>
  * ` // DNA:SON classpath://template/son/include-f.txt \n`
  * edge=`DNA:SON classpath://template/son/include-f.txt \n`

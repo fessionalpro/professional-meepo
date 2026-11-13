@@ -12,6 +12,9 @@ import java.io.StringWriter;
 import java.io.Writer;
 
 /**
+ * RNA:ELSE emits its child gene only if no earlier branch in the named group won.
+ * It also supplies the fallback for an empty RNA:EACH input.
+ *
  * <pre>
  * ` &lt;% RNA:ELSE user %&gt; \n`
  * </pre>

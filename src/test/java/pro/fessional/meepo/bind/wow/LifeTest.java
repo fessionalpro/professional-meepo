@@ -1,8 +1,12 @@
 package pro.fessional.meepo.bind.wow;
 
 import org.junit.jupiter.api.Test;
+
 import pro.fessional.meepo.TraceTest;
 import pro.fessional.meepo.bind.Const;
+
+import java.util.Random;
+import java.util.TreeSet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -93,7 +97,77 @@ public class LifeTest extends TraceTest {
         equalsLive(Life.parse("1-3"), Life.parse("   1-3,   "));
     }
 
-    void equalsLive(Life l1, Life l2){
+    void equalsLive(Life l1, Life l2) {
         assertEquals(l1.toString(), l2.toString());
+    }
+
+    @Test
+    void aWhitespaceOnlyScopeUsesTheDefaultSingleOccurrence() {
+        Life life = Life.parse(" \t\r\n");
+        assertEquals(Life.State.Live, life.enjoy());
+        assertEquals(Life.State.Dead, life.enjoy());
+    }
+
+    @Test
+    void extremeEndpointsCannotOverflowTheIntervalOrdering() {
+        Life life = Life.parse("0--2147483648,2");
+        assertEquals(Life.State.Skip, life.enjoy());
+        assertEquals(Life.State.Live, life.enjoy());
+        assertEquals(Life.State.Dead, life.enjoy());
+    }
+
+    @Test
+    void disjointRangesAdvanceTheMergeCursorBeforeLaterOverlaps() {
+        check("1,3,3");
+        check("1-2,5-7,6-9");
+        check("1-2,4,4");
+        check("1-2,4-9,4-5,12,12");
+        check("1,3-4,3-8,7-10");
+    }
+
+    @Test
+    void scopesMatchAReferenceSetIncludingDuplicatesAndReversedRanges() {
+        Random random = new Random(20261105L);
+        for (int trial = 0; trial < 1000; trial++) {
+            StringBuilder source = new StringBuilder();
+            for (int i = 0; i < 8; i++) {
+                if (i != 0) source.append(',');
+                source.append(1 + random.nextInt(20));
+                if (random.nextBoolean()) source.append('-').append(1 + random.nextInt(20));
+            }
+            check(source.toString());
+        }
+    }
+
+    @Test
+    void namedScopesMayStartWithPunctuation() {
+        Life life = Life.parse("!section");
+        assertEquals("!section", life.name);
+        assertEquals(Life.State.Live, life.enjoy());
+    }
+
+    @Test
+    void rangesWithNoPositiveOccurrencesExpireWithoutGoingLive() {
+        Life life = Life.parse("0--2");
+        assertEquals(Life.State.Skip, life.enjoy());
+        assertEquals(Life.State.Dead, life.enjoy());
+    }
+
+    private static void check(String source) {
+        TreeSet<Integer> expected = new TreeSet<>();
+        for (String part : source.split(",")) {
+            String[] ends = part.split("-");
+            int a = Integer.parseInt(ends[0]);
+            int b = ends.length == 1 ? a : Integer.parseInt(ends[1]);
+            for (int value = Math.min(a, b); value <= Math.max(a, b); value++) expected.add(value);
+        }
+        Life life = Life.parse(source);
+        int last = expected.last();
+        for (int i = 1; i <= last; i++) {
+            assertEquals(expected.contains(i) ? Life.State.Live : Life.State.Skip, life.enjoy(), source + " at " + i);
+        }
+        assertEquals(Life.State.Dead, life.enjoy(), source + " after last occurrence");
+        life.reset();
+        assertEquals(expected.contains(1) ? Life.State.Live : Life.State.Skip, life.enjoy(), source + " after reset");
     }
 }

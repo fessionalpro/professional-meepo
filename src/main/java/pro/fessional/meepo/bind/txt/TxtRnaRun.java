@@ -15,7 +15,8 @@ import java.io.StringWriter;
 import java.io.Writer;
 
 /**
- * Get Var from the Execution Engine
+ * A replacement position that evaluates its warmed RNA expression on every visit.
+ * An empty source span still runs the expression for side effects and emits no value.
  *
  * @author trydofor
  * @since 2020-10-16

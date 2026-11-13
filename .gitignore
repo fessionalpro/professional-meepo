@@ -2,6 +2,9 @@
 *.class
 target/
 
+# Optional JMH CLI output belongs to the current run, not source control.
+jmh-result.*
+
 # Log file
 *.log
 

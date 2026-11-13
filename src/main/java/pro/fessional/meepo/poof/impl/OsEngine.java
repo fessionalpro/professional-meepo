@@ -11,6 +11,7 @@ import pro.fessional.meepo.util.Eval.ArgType;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -30,7 +31,7 @@ public class OsEngine implements RnaEngine {
 
     private static final Logger logger = LoggerFactory.getLogger(OsEngine.class);
 
-    private static final String[] TYPE = {ENGINE$CMD, ENGINE$SH, ENGINE$EXE};
+    private static final String[] TYPE = { ENGINE$CMD, ENGINE$SH, ENGINE$EXE };
 
     @Override
     public @NotNull String[] type() {
@@ -56,47 +57,53 @@ public class OsEngine implements RnaEngine {
     @Override
     public @NotNull Object eval(@NotNull Map<String, Object> ctx, @NotNull RnaWarmed expr, boolean mute) {
 
-        ProcessBuilder builder = new ProcessBuilder();
-        Map<String, String> env = builder.environment();
-        for (Map.Entry<String, Object> en : ctx.entrySet()) {
-            Object v = en.getValue();
-            if (v != null) {
-                env.put(en.getKey(), v.toString());
-            }
-        }
-
-        if (ENGINE$CMD.equalsIgnoreCase(expr.type)) {
-            builder.command("cmd", "/c", expr.expr);
-        }
-        else if (ENGINE$SH.equalsIgnoreCase(expr.type)) {
-            builder.command("bash", "-c", expr.expr);
-        }
-        else {
-            List<String> args = expr.getTypedWork();
-            builder.command(args);
-        }
-
         Process p = null;
         String out = TXT$EMPTY;
         try {
+            ProcessBuilder builder = new ProcessBuilder();
+            Map<String, String> env = builder.environment();
+            for (Map.Entry<String, Object> en : ctx.entrySet()) {
+                Object v = en.getValue();
+                if (v != null) {
+                    env.put(en.getKey(), v.toString());
+                }
+            }
+
+            if (ENGINE$CMD.equalsIgnoreCase(expr.type)) {
+                builder.command("cmd", "/c", expr.expr);
+            }
+            else if (ENGINE$SH.equalsIgnoreCase(expr.type)) {
+                builder.command("bash", "-c", expr.expr);
+            }
+            else {
+                List<String> args = expr.getTypedWork();
+                builder.command(args);
+            }
             p = builder.start();
+            p.getOutputStream().close();
+            final Process process = p;
+            Thread errors = new Thread(() -> drainErrors(process.getErrorStream()), "meepo-stderr");
+            errors.setDaemon(true);
+            errors.start();
 
             final InputStream is = p.getInputStream();
-            BufferedReader ord = new BufferedReader(new InputStreamReader(is, UTF_8));
-
             StringBuilder buf = new StringBuilder();
             String ln;
             String crlf = System.lineSeparator();
-            while ((ln = ord.readLine()) != null) {
-                buf.append(crlf).append(ln);
+            try (BufferedReader ord = new BufferedReader(new InputStreamReader(is, UTF_8))) {
+                while ((ln = ord.readLine()) != null) {
+                    buf.append(crlf).append(ln);
+                }
             }
             if (buf.length() > 0) {
                 out = buf.substring(crlf.length());
             }
 
             p.waitFor();
+            errors.join();
         }
         catch (Throwable t) {
+            if (t instanceof InterruptedException) Thread.currentThread().interrupt();
             if (mute) {
                 logger.warn("mute failed-eval " + expr, t);
             }
@@ -108,6 +115,16 @@ public class OsEngine implements RnaEngine {
             if (p != null) p.destroy();
         }
         return out;
+    }
+
+    static void drainErrors(InputStream input) {
+        try (InputStream stream = input) {
+            byte[] buffer = new byte[1024];
+            while (stream.read(buffer) != -1) { /* Keep the child stderr pipe from filling. */ }
+        }
+        catch (IOException ignored) {
+            // Destroying a process can close its pipe while the drain is running.
+        }
     }
 
     @Override

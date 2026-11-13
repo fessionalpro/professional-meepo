@@ -20,6 +20,8 @@ import static pro.fessional.meepo.bind.Const.ARG$NUMBER_NSUF;
 import static pro.fessional.meepo.bind.Const.ARG$NUMBER_REGEX;
 
 /**
+ * Shared evaluation rules for truthiness, pipeline literals and argument conversion.
+ *
  * @author trydofor
  * @since 2020-11-03
  */
@@ -75,20 +77,24 @@ public class Eval {
             this.string = string;
         }
 
-        @Override public int length() {
+        @Override
+        public int length() {
             return string.length();
         }
 
-        @Override public char charAt(int index) {
+        @Override
+        public char charAt(int index) {
             return string.charAt(index);
         }
 
-        @Override public CharSequence subSequence(int start, int end) {
+        @Override
+        public CharSequence subSequence(int start, int end) {
             return string.subSequence(start, end);
         }
 
         @NotNull
-        @Override public String toString() {
+        @Override
+        public String toString() {
             return string;
         }
     }
@@ -298,6 +304,7 @@ public class Eval {
                 if (c == spt) {
                     if (cnt % 2 == 0) {
                         buf.setCharAt(buf.length() - 1, c);
+                        cnt = 1;
                     }
                     else {
                         typedAdd(arr, buf, typ);
@@ -322,8 +329,12 @@ public class Eval {
     }
 
     private static <T> void typedAdd(List<? super T> list, StringBuilder buff, ArgType<T> type, boolean plain) {
+        if (!plain) {
+            list.add(type.transform(buff.toString()));
+            return;
+        }
         int[] ps = Seek.trimBlank(buff, 0, buff.length());
-        if (plain && ps[1] <= ps[0]) return;
+        if (ps[1] <= ps[0]) return;
         String str = buff.substring(ps[0], ps[1]);
         list.add(type.transform(str));
     }

@@ -14,6 +14,9 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
+ * DNA:END closes named parse-time replacement lifetimes and BKB immunity regions.
+ * It does not close runtime WHEN/EACH groups; those use RNA:DONE.
+ *
  * <pre>
  * ` &lt;% DNA:END id BlackKingBar %&gt; \n`
  * edge=`&lt;% DNA:END id BlackKingBar %&gt;`

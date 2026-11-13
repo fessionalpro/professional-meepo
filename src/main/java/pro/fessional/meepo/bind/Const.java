@@ -3,6 +3,8 @@ package pro.fessional.meepo.bind;
 import java.util.regex.Pattern;
 
 /**
+ * Template tokens, engine aliases and literal conventions shared by both parsers.
+ *
  * @author trydofor
  * @since 2020-10-13
  */

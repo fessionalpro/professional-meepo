@@ -5,13 +5,15 @@ import pro.fessional.meepo.bind.Exon;
 import pro.fessional.meepo.bind.wow.Clop;
 import pro.fessional.meepo.sack.Acid;
 import pro.fessional.meepo.util.Dent;
+import pro.fessional.meepo.pack.Utxt;
 
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
 
 /**
- * Static replacement
+ * Fixed replacement text produced by DNA:SET during parsing.
+ * Merging writes the chosen literal without evaluating it as an expression.
  *
  * @author trydofor
  * @since 2020-10-16
@@ -19,11 +21,11 @@ import java.io.Writer;
 public class TxtDnaSet extends Exon {
 
 
-    private final char @NotNull [] repl9;
+    private final @NotNull Utxt repl9;
 
     public TxtDnaSet(@NotNull String text, Clop edge, @NotNull String repl) {
         super(text, edge);
-        this.repl9 = repl.toCharArray();
+        this.repl9 = new Utxt(repl.toCharArray());
     }
 
     @Override

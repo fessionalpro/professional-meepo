@@ -1,5 +1,12 @@
 # Meepo Hero Template (pro.fessional.meepo)
 
+Implementation guides (Chinese): [language specification](doc/syntax.zh.md), [names and execution flow](doc/naming.zh.md), [documentation index](doc/README.zh.md).
+
+Charsets are caller-controlled byte I/O parameters, not template syntax. Use `Meepo.parse(file, inputCharset)`
+to decode source bytes and `gene.merge(model, outputStream, outputCharset)` to encode output; both default to UTF-8.
+The same character-based Gene can render with different output encodings. Output uses `merge` overloads
+for Writer or OutputStream; String and Writer APIs retain their character-based contracts.
+
 ![Maven Central](https://img.shields.io/maven-central/v/pro.fessional/meepo?color=00DD00)
 ![Sonatype Snapshots](https://img.shields.io/nexus/s/pro.fessional/meepo?server=https%3A%2F%2Foss.sonatype.org)
 [![Coverage Status](https://coveralls.io/repos/github/trydofor/professional-meepo/badge.svg)](https://coveralls.io/github/trydofor/professional-meepo)
