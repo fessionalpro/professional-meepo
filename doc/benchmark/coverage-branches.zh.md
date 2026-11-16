@@ -53,5 +53,5 @@ HTML 报告位于 `target/site/jacoco/index.html`，XML 报告位于同目录的
 | JDK 15+ | `nashorn-jdk15` 添加 test scope 的独立 Nashorn，支持完整 JS 用例 |
 | JDK 17+ | `jmh-jdk17` 添加完整引擎比较与现代运行时环境用例，运行时环境用例需要 jlink |
 
-复现命令、跨 JDK 构建和报告管理见 [校验 Prompt](../prompt/jmh.prompt.md)。
+复现命令、跨 JDK 构建和报告管理见 [校验 Prompt](../prompt/jmh.prompt.zh.md)。
 阶段测试数量、缺陷修复和分支调整依据见 [测试迭代记录](../changelog/2026-11-13-tests.zh.md)。

@@ -1,7 +1,7 @@
 # Meepo 性能设计与比较结论
 
 可执行基准位于 `src/test/java/pro/fessional/meepo/jmh` 与 `src/test/jdk17/pro/fessional/meepo/jmh`。
-依赖统一由根 POM 的 `test` scope 管理；每次测量按 [JMH Prompt](../prompt/jmh.prompt.md) 重新执行。
+依赖统一由根 POM 的 `test` scope 管理；每次测量按 [JMH Prompt](../prompt/jmh.prompt.zh.md) 重新执行。
 
 ## 执行与缓存设计
 
@@ -321,4 +321,4 @@ JavaMonitorEnter 事件按 10 ms 阈值采集，四次运行的渲染栈记录�
 - 各次 merge 创建独立 Acid，变量、引擎映射和分支胜出状态分别管理，可变引擎通过 fork 隔离。共享 Utxt 以完整快照发布编码，允许重复计算。自定义函数、模型对象和输入游标的并发使用遵循各自契约。
 - 12 个单线程组合的两个 JVM 均值相差超过 15%，范围已逐项列出。例如 writer/rows20 的 Meepo 与 JMustache 均值相差不到 0.1%，接近结果应结合范围理解。
 
-测量范围为 168 组参数、336 个独立 fork，另有 4 个 JFR 采样 fork。复现方法见 [JMH Prompt](../prompt/jmh.prompt.md)。
+测量范围为 168 组参数、336 个独立 fork，另有 4 个 JFR 采样 fork。复现方法见 [JMH Prompt](../prompt/jmh.prompt.zh.md)。

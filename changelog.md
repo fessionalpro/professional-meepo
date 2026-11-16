@@ -4,14 +4,20 @@
 
 ## [Unreleased]
 
+The target release is `2.0.0`.
+
 ### Added
 
+- Repository AI development conventions and practical configuration and email templates.
+- Maven Central Portal publishing with signed releases, automatic develop SNAPSHOTs, local private repository publishing and Java 8/11/17/21 CI verification.
+- Maven Wrapper with a pinned Maven 3.9.16 distribution and SHA-256 verification.
 - Caller-supplied charset overloads for byte template inputs and outputs, defaulting to UTF-8.
 - EACH traversal of finite Iterator, non-Collection Iterable and BaseStream inputs, including primitive streams.
 - Cursor inputs are collected into ArrayList with null placeholders for skipped positions, sharing exact size, integer counts and forward/reverse traversal with collections.
 
 ### Changed
 
+- Repository links now use the fessionalpro organization. Chinese Markdown uses the `.zh.md` suffix, with development conventions in `doc/AGENTS.zh.md` and an English root entry.
 - Templates remain character-based; input charset exists only during decoding and Parser resource loading, independently of output encoding.
 - Writer merging uses the original two-argument entry points. Ubuf selects cached bytes using its own output charset.
 - Ubuf encodes character arrays and String slices through CharBuffer views and a reusable CharsetEncoder buffer.
@@ -66,7 +72,7 @@ bump version, ready for stable channel.
 
 ## [master]
 
-[master]: https://github.com/trydofor/professional-meepo
-[1.0.0]: https://github.com/trydofor/professional-meepo/releases/tag/1.0.0
-[1.4.0]: https://github.com/trydofor/professional-meepo/releases/tag/1.4.0
-[1.5.0]: https://github.com/trydofor/professional-meepo/releases/tag/1.5.0
+[master]: https://github.com/fessionalpro/professional-meepo
+[1.0.0]: https://github.com/fessionalpro/professional-meepo/releases/tag/1.0.0
+[1.4.0]: https://github.com/fessionalpro/professional-meepo/releases/tag/1.4.0
+[1.5.0]: https://github.com/fessionalpro/professional-meepo/releases/tag/1.5.0

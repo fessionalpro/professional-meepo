@@ -25,15 +25,15 @@
 
 构建及正确性：
 - 切换 JDK 时先 clean，避免 Java 17 测试 class 被 Java 8 误用。
-- 完整 JDK 8：mvn -Pcoverage clean verify -Dmaven.javadoc.skip=true -Dmaven.source.skip=true
-- 完整 JDK 17+：mvn clean test
+- 完整 JDK 8：./mvnw -Pcoverage clean verify -Dmaven.javadoc.skip=true -Dmaven.source.skip=true
+- 完整 JDK 17+：./mvnw clean test
 - TemplateComparisonTest 检查六个引擎 × 四种负载 × 四种接口，共 96 个组合。
 - 输出必须逐字符、逐字节相同，含中文、emoji、原始 <&>；不得通过 trim、空白折叠或预计算模型值制造一致。
 - 缺依赖、版本不兼容或网络失败时报告实际原因，不偷偷换版本或把替代源码构建说成发行二进制。
 - 用正式发布 JAR 验证其 class 字节码版本；不能通过把源码重新编译为 Java 8 来推断发布 JAR 支持 Java 8。
 
 建立实际测试 classpath：
-mvn -DskipTests test-compile org.apache.maven.plugins:maven-dependency-plugin:3.7.0:build-classpath \
+./mvnw -DskipTests test-compile org.apache.maven.plugins:maven-dependency-plugin:3.7.0:build-classpath \
   -DincludeScope=test -Dmdep.outputFile=target/jmh-classpath.txt
 
 POSIX 环境示意：

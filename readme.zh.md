@@ -3,8 +3,7 @@
 文档：[语法与跨语言实现规范](doc/syntax.zh.md)、[命名与执行流程](doc/naming.zh.md)、[完整索引](doc/README.zh.md)。
 
 ![Maven Central](https://img.shields.io/maven-central/v/pro.fessional/meepo?color=00DD00)
-![Sonatype Snapshots](https://img.shields.io/nexus/s/pro.fessional/meepo?server=https%3A%2F%2Foss.sonatype.org)
-[![Coverage Status](https://coveralls.io/repos/github/trydofor/professional-meepo/badge.svg)](https://coveralls.io/github/trydofor/professional-meepo)
+[![CI](https://github.com/fessionalpro/professional-meepo/actions/workflows/ci.yml/badge.svg)](https://github.com/fessionalpro/professional-meepo/actions/workflows/ci.yml)
 
 > 中文 🇨🇳 | [English 🇺🇸](readme.md)
 
@@ -22,6 +21,24 @@
 * 占位符模板，支持自定义变量边界和变量转义(spring痛点)
 * java体系内，灵活高效的自定义函数（动态，静态，运行时）
 
+当前目标发布版本为 **2.0.0**，POM 默认开发版本为 **2.0.0-SNAPSHOT**。
+发布配置与首次准备步骤见 [Maven Central 发布](doc/release.zh.md)。
+
+## 构建与发布
+
+Maven 版本由 Wrapper 固定，JDK 可由 mise 或本机其他 JDK 管理器选择。
+
+```sh
+./mvnw -B -ntp verify
+./mvnw -B -ntp -Pcoverage verify
+```
+
+Windows 使用 `mvnw.cmd`。Maven 版本配置位于 `.mvn/wrapper/maven-wrapper.properties`。
+开发约定见 [AGENTS.zh.md](doc/AGENTS.zh.md)。
+
+GitHub Release 发布对应正式版。`develop` 的 push 通过 CI 后发布由 POM 派生的 SNAPSHOT，当前为 `2.0.0-SNAPSHOT`。
+私服支持 release 与 SNAPSHOT 仓库，配置、凭证和演练步骤见 [发布说明](doc/release.zh.md)。
+
 ## 如何使用
 
 ① 自己`clone`和`install`最豪横。
@@ -32,7 +49,7 @@
 <dependency>
     <groupId>pro.fessional</groupId>
     <artifactId>meepo</artifactId>
-    <version>${meepo.version}</version>
+    <version>2.0.0</version>
 </dependency>
 ```
 
@@ -40,9 +57,9 @@
 
 ```xml
 <repository>
-    <id>oss-sonatype</id>
-    <name>oss-sonatype</name>
-    <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+    <id>central-snapshots</id>
+    <name>Central Portal Snapshots</name>
+    <url>https://central.sonatype.com/repository/maven-snapshots/</url>
     <snapshots>
         <enabled>true</enabled>
     </snapshots>

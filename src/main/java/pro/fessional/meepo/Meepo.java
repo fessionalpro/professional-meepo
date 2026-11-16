@@ -74,7 +74,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  * The repository keeps no raw measurement files or cached benchmark runs;
  * these historical values do not replace a fresh measurement of a new revision.
  * Methodology, correctness gates and execution instructions are in the
- * <a href="https://github.com/trydofor/professional-meepo/blob/main/doc/prompt/jmh.prompt.md">JMH execution prompt</a>.</p>
+ * <a href="https://github.com/fessionalpro/professional-meepo/blob/main/doc/prompt/jmh.prompt.zh.md">JMH execution prompt</a>.</p>
  *
  * @author trydofor
  * @since 2020-10-15

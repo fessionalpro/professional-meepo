@@ -760,7 +760,7 @@ profile 分为 core、java-edges、java-utf16，表示该用例的目标，**并
 
 Java 参考校验流程对成功用例重复 merge，并验证 String、不同调用方输出字符集的字节结果和调用方 Map 的所有权约束。
 用例是本文的可执行实例，不是独立语言实现已完成的证明；正则方言、getter、宿主函数、全部异常恢复仍需补测。
-构建与运行步骤见 [一致性校验 Prompt](prompt/conformance.prompt.md)。
+构建与运行步骤见 [一致性校验 Prompt](prompt/conformance.prompt.zh.md)。
 
 ## 15. Java 参考实现
 

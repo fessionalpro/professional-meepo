@@ -8,7 +8,7 @@
 先读 doc/syntax.zh.md；不要通过修改预期值掩盖实现差异。
 
 Java 参考实现的准备：
-mvn -DskipTests compile org.apache.maven.plugins:maven-dependency-plugin:3.7.0:build-classpath \
+./mvnw -DskipTests compile org.apache.maven.plugins:maven-dependency-plugin:3.7.0:build-classpath \
   -DincludeScope=compile -Dmdep.outputFile=target/conformance-classpath.txt
 
 使用当前生产 class 与真实编译期依赖，分别在完整 JDK 8 和 JDK 21 运行。
