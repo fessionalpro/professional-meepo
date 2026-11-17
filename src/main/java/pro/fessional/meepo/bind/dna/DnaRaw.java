@@ -4,12 +4,16 @@ import pro.fessional.meepo.bind.Exon;
 import pro.fessional.meepo.bind.wow.Clop;
 import pro.fessional.meepo.sack.Acid;
 import pro.fessional.meepo.util.Dent;
+import pro.fessional.meepo.pack.Utxt;
 
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
 
 /**
+ * DNA:RAW unwraps literal content from a target-language comment during parsing.
+ * The extracted body is fixed text when the resulting gene is merged.
+ *
  * <pre>
  * ` &lt;% DNA:RAW {{pebbleVariable}} %&gt; \n`
  * edge=`&lt;% DNA:RAW {{pebbleVariable}} %&gt;`*
@@ -25,11 +29,11 @@ import java.io.Writer;
  */
 public class DnaRaw extends Exon {
 
-    private final char[] body9;
+    private final Utxt body9;
 
     public DnaRaw(String text, Clop edge, int raw0, int raw1) {
         super(text, edge);
-        this.body9 = Dent.chars(text, raw0, raw1);
+        this.body9 = new Utxt(Dent.chars(text, raw0, raw1));
     }
 
     @Override

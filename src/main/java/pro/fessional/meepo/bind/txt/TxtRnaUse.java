@@ -17,7 +17,8 @@ import java.io.Writer;
 import static pro.fessional.meepo.bind.Const.ENGINE$MAP;
 
 /**
- * Get Var from the environment
+ * A replacement position whose value comes from the current context via the map engine.
+ * RNA:USE and Holder placeholders produce these nodes; indentation is applied at output.
  *
  * @author trydofor
  * @since 2020-10-16

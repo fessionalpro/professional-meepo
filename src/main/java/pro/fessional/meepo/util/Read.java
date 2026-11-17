@@ -4,6 +4,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
@@ -12,12 +13,13 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
- * Auto read `classpath:`, `file://` and URL format.
+ * Auto read `classpath:`, `file:` and URL format.
  * If there is no protocol section, try to read in classpath and file
  *
  * @author trydofor
@@ -26,7 +28,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 public class Read {
 
     private static final String CLAS = "classpath:";
-    private static final String FILE = "file://";
+    private static final String FILE = "file:";
 
     @NotNull
     public static String read(String uri) {
@@ -40,11 +42,46 @@ public class Read {
 
     @NotNull
     public static String read(@NotNull String uri, String pwd, Charset cs) {
+        return read(resolve(uri, pwd), cs);
+    }
+
+    /**
+     * Resolve includes against the containing template, including filesystem paths with spaces.
+     */
+    @NotNull
+    public static String resolve(@NotNull String uri, String pwd) {
         if ((uri.startsWith(".") || uri.startsWith("/"))) {
-            URI u = URI.create(pwd == null ? "." : pwd);
-            uri = u.resolve(uri).toString();
+            URI u = pwd != null && pwd.indexOf(':') >= 0 ? URI.create(pwd)
+                : (pwd == null ? Paths.get(".") : Paths.get(pwd)).toAbsolutePath().toUri();
+            uri = u.resolve(uri.replace(" ", "%20")).toString();
         }
-        return read(uri, cs);
+        return uri;
+    }
+
+    /**
+     * Normalize include identities without fetching remote resources; resolve existing file aliases.
+     */
+    public static String identity(String uri) {
+        URI resource = URI.create(uri).normalize();
+        if ("file".equalsIgnoreCase(resource.getScheme())) {
+            Path file = filePath(uri);
+            try {
+                return file.toRealPath().toUri().toString();
+            }
+            catch (IOException missing) {
+                // A source string can have an origin path that has not been created yet.
+                return file.toAbsolutePath().normalize().toUri().toString();
+            }
+        }
+        return resource.toString();
+    }
+
+    private static Path filePath(String uri) {
+        String path = uri.substring(FILE.length());
+        if (path.startsWith("//./") || path.startsWith("//../")) {
+            return Paths.get(path.substring(2)); // Preserve the explicit legacy relative-file spelling.
+        }
+        return Paths.get(URI.create(FILE + path));
     }
 
     @NotNull
@@ -56,7 +93,7 @@ public class Read {
                 is = Read.class.getResourceAsStream(uri.substring(CLAS.length()));
             }
             else if (uri.regionMatches(true, 0, FILE, 0, FILE.length())) {
-                is = Files.newInputStream(Paths.get(uri.substring(FILE.length())));
+                is = Files.newInputStream(filePath(uri));
             }
             else {
                 if (uri.indexOf(':') < 0) {

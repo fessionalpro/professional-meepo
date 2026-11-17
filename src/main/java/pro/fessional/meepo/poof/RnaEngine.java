@@ -5,7 +5,10 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Map;
 
 /**
- * RNA, the execution engine should be used in single thread.
+ * Evaluates the dynamic (RNA) part of a template.
+ * Parser calls warm once per distinct expression; merge calls eval with the
+ * current Acid context. Engine instances are used in one thread; fork supplies
+ * the instance for a separate parse or merge.
  *
  * @author trydofor
  * @since 2020-10-15

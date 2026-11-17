@@ -13,6 +13,11 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
+ * Parse-time lifetime of a replacement processor, counted by matching occurrences.
+ * A scope selects one occurrence, ranges such as 1,3-5, all occurrences (*), or
+ * a named lifetime closed by DNA:END. This counter is unrelated to elapsed time
+ * and does not advance when the completed Gene is rendered.
+ *
  * @author trydofor
  * @since 2020-10-16
  */
@@ -119,13 +124,11 @@ public class Life {
     }
 
     /**
-     * Parse scope(Life) without blanks, `1,2,3` and `1-3`.
+     * Parse scope(Life), trimming surrounding blanks, e.g. `1,2,3` and `1-3`.
      */
     public static Life parse(String str) {
-        int len = str.length();
-        if (len == 0) return nobodyOne();
-
         str = str.trim();
+        if (str.isEmpty()) return nobodyOne();
         char c = str.charAt(0);
         if (c == '*') return nobodyAny();
         if (c < '0' || c > '9') return new Life(str, null);
@@ -136,32 +139,36 @@ public class Life {
             int m = s.indexOf('-');
             if (m < 0) {
                 int p = Integer.parseInt(s);
-                books.add(new int[]{p});
+                books.add(new int[]{ p });
             }
             else {
                 int p1 = Integer.parseInt(s.substring(0, m));
                 int p2 = Integer.parseInt(s.substring(m + 1));
                 if (p1 == p2) {
-                    books.add(new int[]{p1});
+                    books.add(new int[]{ p1 });
                 }
                 else if (p1 < p2) {
-                    books.add(new int[]{p1, p2});
+                    books.add(new int[]{ p1, p2 });
                 }
                 else {
-                    books.add(new int[]{p2, p1});
+                    books.add(new int[]{ p2, p1 });
                 }
             }
         }
 
         // sort and check range
-        books.sort((o1, o2) -> o1[0] == o2[0] ? o2[o2.length - 1] - o1[o1.length - 1] : o1[0] - o2[0]);
+        books.sort((o1, o2) -> o1[0] == o2[0]
+            ? Integer.compare(o2[o2.length - 1], o1[o1.length - 1])
+            : Integer.compare(o1[0], o2[0]));
         Iterator<int[]> it = books.iterator();
+        // aa must track the last retained interval, including after a disjoint gap.
         int[] aa = it.next();
         while (it.hasNext()) {
             int[] bb = it.next();
 
             if (aa.length == 1 && bb.length == 1) {
                 if (aa[0] == bb[0]) it.remove();
+                else aa = bb;
             }
             else if (aa.length == 2 && bb.length == 2) {
                 if (bb[1] <= aa[1]) {
@@ -171,9 +178,11 @@ public class Life {
                     it.remove();
                     aa[1] = bb[1];
                 }
+                else aa = bb;
             }
-            else if (aa.length == 2 && bb.length == 1) {
+            else if (aa.length == 2) { // Only singleton/range pages exist; range/range was handled above.
                 if (aa[1] >= bb[0]) it.remove();
+                else aa = bb;
             }
             else {
                 // aa.length == 1 && bb.length == 2 (including)
@@ -196,5 +205,5 @@ public class Life {
         return new Life(name, Collections.emptyList());
     }
 
-    private static final List<int[]> One = Collections.singletonList(new int[]{1});
+    private static final List<int[]> One = Collections.singletonList(new int[]{ 1 });
 }

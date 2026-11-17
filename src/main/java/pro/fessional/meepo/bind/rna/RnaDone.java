@@ -4,6 +4,7 @@ import org.jetbrains.annotations.NotNull;
 import pro.fessional.meepo.bind.Const;
 import pro.fessional.meepo.bind.wow.Clop;
 import pro.fessional.meepo.bind.wow.Tock;
+import pro.fessional.meepo.pack.Utxt;
 import pro.fessional.meepo.sack.Acid;
 import pro.fessional.meepo.util.Dent;
 
@@ -16,6 +17,9 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
+ * RNA:DONE closes named control groups in the parser and clears their execution
+ * markers during merging, allowing an enclosing loop to execute them again.
+ *
  * <pre>
  * ` &lt;% RNA:DONE user pwd %&gt; \n`
  * </pre>
@@ -29,10 +33,10 @@ public class RnaDone extends Tock {
     public final Set<String> name;
 
     public RnaDone(String text, Clop edge, Collection<String> name) {
-        this(Dent.chars(text, edge), edge, Const.TXT$EMPTY, name);
+        this(new Utxt(Dent.chars(text, edge)), edge, Const.TXT$EMPTY, name);
     }
 
-    protected RnaDone(char[] text9, Clop edge, @NotNull String tock, Collection<String> name) {
+    protected RnaDone(Utxt text9, Clop edge, @NotNull String tock, Collection<String> name) {
         super(text9, edge, tock);
         if (name instanceof Set) {
             this.name = Collections.unmodifiableSet((Set<String>) name);
@@ -54,6 +58,7 @@ public class RnaDone extends Tock {
         }
         else {
             logger.trace("[👹Merge:tock] deal RNA:DONE tock={}", tock);
+            // An enclosing EACH may revisit this group with a different item.
             acid.execute.remove(tock);
         }
     }

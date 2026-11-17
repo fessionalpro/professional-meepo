@@ -1,0 +1,12 @@
+# HI-MEEPO
+# RNA:USE #^  name: "(.*)"$#appName#
+# RNA:USE #^  url: "(.*)"$#databaseUrl#
+# RNA:USE #^  address: "(.*)"$#cacheAddress#
+application:
+  name: "demo-mailer"
+database:
+  url: "jdbc:postgresql://127.0.0.1:5432/demo"
+# RNA:WHEN /yes/cacheEnabled/cache
+cache:
+  address: "127.0.0.1:6379"
+# RNA:DONE cache

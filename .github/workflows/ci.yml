@@ -1,0 +1,193 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+    inputs:
+      publish_snapshot:
+        description: 'Publish a SNAPSHOT after successful CI'
+        default: false
+        type: boolean
+      snapshot_dry_run:
+        description: 'Build SNAPSHOT artifacts without uploading'
+        default: true
+        type: boolean
+  workflow_call:
+    inputs:
+      ref:
+        type: string
+        required: true
+      revision:
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}-${{ inputs.ref || '' }}-${{ inputs.publish_snapshot || false }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/develop' && !inputs.publish_snapshot }}
+
+env:
+  TZ: Asia/Shanghai
+  LANG: C.UTF-8
+  MAVEN_ARGS: ${{ inputs.revision && format('-Drevision={0}', inputs.revision) || '' }}
+
+jobs:
+  compile:
+    name: Build Java 8 artifacts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: '8'
+          cache: maven
+      - name: Check publication tooling
+        run: python3 -m unittest discover -s .github/script -p 'test_*.py' -v
+      - name: Build production classes, sources and Javadoc
+        run: ./mvnw -B -ntp -DskipTests package
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: java8-classes
+          path: target/classes/
+          if-no-files-found: error
+          retention-days: 7
+
+  test:
+    name: Test Java ${{ matrix.java }}
+    needs: compile
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        java: ['8', '11', '17', '21']
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+          cache: maven
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: java8-classes
+          path: target/classes/
+      # Compile the active JDK's tests while retaining identical production bytecode.
+      - name: Run matching tests with fresh coverage
+        run: |
+          # Runtime compiler failure fixtures are asserted by the tests.
+          echo "::remove-matcher owner=javac::"
+          ./mvnw -B -ntp -Pcoverage -Dmaven.main.skip=true -DfailIfNoTests=true test
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: coverage-java-${{ matrix.java }}
+          path: |
+            target/jacoco.exec
+            target/surefire-reports/
+            target/site/jacoco/
+          if-no-files-found: error
+          retention-days: 7
+
+  coverage:
+    name: Check merged coverage
+    needs: test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: '8'
+          cache: maven
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: java8-classes
+          path: target/classes/
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: coverage-java-*
+          path: target/coverage-results/
+      - name: Merge runs and enforce complete coverage
+        run: |
+          for jdk in 8 11 17 21; do
+            test -s "target/coverage-results/coverage-java-$jdk/jacoco.exec"
+          done
+          ./mvnw -B -ntp -Pcoverage,coverage-merge jacoco:merge jacoco:report jacoco:check@coverage-check
+          python3 - <<'PYTHON'
+          import xml.etree.ElementTree as ET
+          report = ET.parse('target/site/jacoco/jacoco.xml').getroot()
+          required = {'INSTRUCTION', 'BRANCH', 'LINE', 'COMPLEXITY', 'METHOD', 'CLASS'}
+          counters = {node.get('type'): node for node in report.findall('counter')}
+          if not required.issubset(counters) or not report.findall('package/class'):
+              raise SystemExit('Missing production coverage counters or classes')
+          if any(int(counters[name].get('missed')) for name in required):
+              raise SystemExit('Production coverage must be 100% for all counters')
+          PYTHON
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: coverage-merged
+          path: target/site/jacoco/
+          if-no-files-found: error
+          retention-days: 14
+
+  snapshot:
+    name: Publish Central SNAPSHOT
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/develop') ||
+      (github.event_name == 'workflow_dispatch' && inputs.publish_snapshot)
+    needs: coverage
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    environment: maven-central
+    concurrency:
+      group: maven-central-snapshot
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: '8'
+          cache: maven
+          server-id: central
+          server-username-env-var: CENTRAL_USERNAME
+          server-password-env-var: CENTRAL_TOKEN
+      - name: Resolve SNAPSHOT version
+        id: version
+        run: python3 .github/script/publish_version.py snapshot --github-output "$GITHUB_OUTPUT"
+      - name: Build and deploy SNAPSHOT
+        env:
+          CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
+          CENTRAL_TOKEN: ${{ secrets.CENTRAL_TOKEN }}
+          SNAPSHOT_VERSION: ${{ steps.version.outputs.revision }}
+          SKIP_UPLOAD: ${{ github.event_name == 'workflow_dispatch' && inputs.snapshot_dry_run }}
+        run: |
+          if [ "$SKIP_UPLOAD" != true ]; then
+            test -n "$CENTRAL_USERNAME" && test -n "$CENTRAL_TOKEN"
+          fi
+          # Runtime compiler failure fixtures are asserted by the tests.
+          echo "::remove-matcher owner=javac::"
+          ./mvnw -B -ntp -Pcentral "-Drevision=$SNAPSHOT_VERSION" \
+            "-Dcentral.skipUpload=$SKIP_UPLOAD" deploy

@@ -15,7 +15,6 @@ public class DnaRawTest extends TraceTest {
     final DnaRaw d2 = new DnaRaw(" // DNA:RAW SUPER(1010100", new Clop(1, 25, 1, 1), 12, 25);
 
 
-
     @Test
     public void testToString() {
         logger.debug("d1={}", d1);

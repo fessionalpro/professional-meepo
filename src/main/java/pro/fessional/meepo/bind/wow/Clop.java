@@ -7,7 +7,8 @@ import java.io.StringWriter;
 import java.io.Writer;
 
 /**
- * close-open range
+ * Clop (closed-open): source coordinates in the half-open range [start, until).
+ * Character offsets are zero-based; line0 and line1 are one-based diagnostics.
  *
  * @author trydofor
  * @since 2020-10-19

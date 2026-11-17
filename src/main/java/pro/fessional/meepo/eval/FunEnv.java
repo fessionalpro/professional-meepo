@@ -34,6 +34,7 @@ public class FunEnv {
     public static final String FUN$PASCAL_CASE_1 = KEY$PREFIX + "PascalCase";
     public static final String FUN$BIG_SNAKE = KEY$PREFIX + "bigCase";
     public static final String FUN$BIG_SNAKE_1 = KEY$PREFIX + "BIG_SNAKE";
+    public static final String FUN$BIG_SNAKE_2 = KEY$PREFIX + "bigSnake";
     public static final String FUN$SNAKE_CASE = KEY$PREFIX + "snake_case";
     public static final String FUN$SNAKE_CASE_1 = KEY$PREFIX + "snakeCase";
 

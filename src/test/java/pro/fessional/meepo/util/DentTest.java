@@ -53,15 +53,15 @@ public class DentTest {
     @Test
     public void left3() {
         CharArrayWriter buf = new CharArrayWriter();
-        Dent.indent(buf, 0, new int[]{1, 2, 3});
+        Dent.indent(buf, 0, new int[]{ 1, 2, 3 });
         assertEquals("123", buf.toString());
 
         buf.reset();
-        Dent.indent(buf, 1, new char[]{'1', '2', '3'});
+        Dent.indent(buf, 1, new char[]{ '1', '2', '3' });
         assertEquals("1 2 3", buf.toString());
 
         buf.reset();
-        Dent.indent(buf, 1, new String[]{"1\n", "2\n", "3\n"});
+        Dent.indent(buf, 1, new String[]{ "1\n", "2\n", "3\n" });
         assertEquals("1\n 2\n 3\n", buf.toString());
 
         buf.reset();
@@ -78,15 +78,15 @@ public class DentTest {
         StringWriter out = new StringWriter();
         StringBuffer buf = out.getBuffer();
 
-        Dent.indent(out, 0, new int[]{1, 2, 3});
+        Dent.indent(out, 0, new int[]{ 1, 2, 3 });
         assertEquals("123", out.toString());
 
         buf.setLength(0);
-        Dent.indent(out, 1, new char[]{'1', '2', '3'});
+        Dent.indent(out, 1, new char[]{ '1', '2', '3' });
         assertEquals("1 2 3", out.toString());
 
         buf.setLength(0);
-        Dent.indent(out, 1, new String[]{"1\n", "2\n", "3\n"});
+        Dent.indent(out, 1, new String[]{ "1\n", "2\n", "3\n" });
         assertEquals("1\n 2\n 3\n", out.toString());
 
         buf.setLength(0);

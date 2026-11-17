@@ -11,6 +11,13 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TimeZone;
+import java.util.Collections;
+import java.util.UUID;
+import java.util.concurrent.*;
+import java.util.function.Supplier;
+
+import pro.fessional.meepo.sack.Holder;
+
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
@@ -22,6 +29,39 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * @since 2020-11-14
  */
 public class RnaManagerTest extends TraceTest {
+
+    @Test
+    public void anActiveMergeKeepsItsFunctionSnapshotDuringRegistration() throws Exception {
+        String key = "fun:snapshot-" + UUID.randomUUID();
+        RnaManager.register(key, (Supplier<String>) () -> "old");
+        Gene gene = Holder.parse("{{checkpoint}}|{{" + key + "}}");
+        CountDownLatch entered = new CountDownLatch(1);
+        CountDownLatch resume = new CountDownLatch(1);
+        Supplier<String> checkpoint = () -> {
+            entered.countDown();
+            try {
+                if (!resume.await(10, TimeUnit.SECONDS)) throw new IllegalStateException("checkpoint timed out");
+            }
+            catch (InterruptedException failure) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException(failure);
+            }
+            return "ready";
+        };
+        ExecutorService worker = Executors.newSingleThreadExecutor();
+        try {
+            Future<String> active = worker.submit(() -> gene.merge(Collections.singletonMap("checkpoint", checkpoint)));
+            assertTrue(entered.await(10, TimeUnit.SECONDS));
+            RnaManager.register(key, (Supplier<String>) () -> "new");
+            resume.countDown();
+            assertEquals("ready|old", active.get(10, TimeUnit.SECONDS));
+            assertEquals("ready|new", gene.merge(Collections.singletonMap("checkpoint", checkpoint)));
+        }
+        finally {
+            resume.countDown();
+            worker.shutdownNow();
+        }
+    }
 
     @Test
     public void testFunNow1() {
@@ -47,44 +87,50 @@ public class RnaManagerTest extends TraceTest {
 
     @Test
     public void testFunNow() {
-        TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
-        JavaEval fun = RnaManager.getFunction("fun:now");
-        Map<String, Object> ctx = new HashMap<>();
-        {
-            Object obj = fun.eval(ctx, null);
-            logger.debug("testFunNow.obj={}", obj);
+        TimeZone previous = TimeZone.getDefault();
+        try {
+            TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
+            JavaEval fun = RnaManager.getFunction("fun:now");
+            Map<String, Object> ctx = new HashMap<>();
+            {
+                Object obj = fun.eval(ctx, null);
+                logger.debug("testFunNow.obj={}", obj);
+            }
+            {
+                Object obj = fun.eval(ctx, new java.util.Date(0));
+                assertEquals("1970-01-01 00:00:00", obj);
+            }
+            {
+                Object obj = fun.eval(ctx, new java.sql.Date(0));
+                assertEquals("1970-01-01 00:00:00", obj);
+            }
+            {
+                Object obj = fun.eval(ctx, new java.sql.Timestamp(0));
+                assertEquals("1970-01-01 00:00:00", obj);
+            }
+            {
+                Object obj = fun.eval(ctx, LocalDateTime.of(1970, 1, 1, 0, 0, 0));
+                assertEquals("1970-01-01 00:00:00", obj);
+            }
+            {
+                Object obj = fun.eval(ctx, new java.util.Date(0), "yyyy-MM-dd");
+                assertEquals("1970-01-01", obj);
+            }
+            {
+                Object obj = fun.eval(ctx, new java.sql.Date(0), "yyyy-MM-dd");
+                assertEquals("1970-01-01", obj);
+            }
+            {
+                Object obj = fun.eval(ctx, new java.sql.Timestamp(0), "yyyy-MM-dd");
+                assertEquals("1970-01-01", obj);
+            }
+            {
+                Object obj = fun.eval(ctx, LocalDate.of(1970, 1, 1), "yyyy-MM-dd");
+                assertEquals("1970-01-01", obj);
+            }
         }
-        {
-            Object obj = fun.eval(ctx, new java.util.Date(0));
-            assertEquals("1970-01-01 00:00:00", obj);
-        }
-        {
-            Object obj = fun.eval(ctx, new java.sql.Date(0));
-            assertEquals("1970-01-01 00:00:00", obj);
-        }
-        {
-            Object obj = fun.eval(ctx, new java.sql.Timestamp(0));
-            assertEquals("1970-01-01 00:00:00", obj);
-        }
-        {
-            Object obj = fun.eval(ctx, LocalDateTime.of(1970, 1, 1, 0, 0, 0));
-            assertEquals("1970-01-01 00:00:00", obj);
-        }
-        {
-            Object obj = fun.eval(ctx, new java.util.Date(0), "yyyy-MM-dd");
-            assertEquals("1970-01-01", obj);
-        }
-        {
-            Object obj = fun.eval(ctx, new java.sql.Date(0), "yyyy-MM-dd");
-            assertEquals("1970-01-01", obj);
-        }
-        {
-            Object obj = fun.eval(ctx, new java.sql.Timestamp(0), "yyyy-MM-dd");
-            assertEquals("1970-01-01", obj);
-        }
-        {
-            Object obj = fun.eval(ctx, LocalDate.of(1970, 1, 1), "yyyy-MM-dd");
-            assertEquals("1970-01-01", obj);
+        finally {
+            TimeZone.setDefault(previous);
         }
     }
 

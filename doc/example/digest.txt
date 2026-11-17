@@ -1,0 +1,17 @@
+# HI-MEEPO
+# RNA:USE /2026-11-13/reportDate/
+待办摘要（2026-11-13）
+
+# RNA:USE /示例用户/recipient/
+示例用户，您好！
+
+# RNA:EACH /1/tasks/task
+# RNA:USE /序号/task._count/
+# RNA:USE /示例事项/task.title/
+# RNA:USE /2026-11-14/task.due/
+序号. 示例事项（截止 2026-11-14）
+# RNA:ELSE task
+当前没有待办事项。
+# RNA:DONE task
+
+# DNA:SON ./signature.txt

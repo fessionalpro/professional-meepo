@@ -38,14 +38,14 @@ class ElvTest {
         ctx.put("GitHash", "abc");
         ctx.put("ModTime", "got");
 
-        final Gene g1 = Meepo.parse("g1","// HI-MEEPO\n"
-                                    + "// RNA:USE /hash/fun:see GitHashX ModTime/\n"
-                                    + "project hash");
+        final Gene g1 = Meepo.parse("g1", "// HI-MEEPO\n"
+                                          + "// RNA:USE /hash/fun:see GitHashX ModTime/\n"
+                                          + "project hash");
         assertEquals("project got", g1.merge(ctx));
 
-        final Gene g2 = Meepo.parse("g2","// HI-MEEPO\n"
-                                     + "// RNA:USE /hash/fun:see GitHash ModTime/\n"
-                                     + "project hash");
+        final Gene g2 = Meepo.parse("g2", "// HI-MEEPO\n"
+                                          + "// RNA:USE /hash/fun:see GitHash ModTime/\n"
+                                          + "project hash");
         assertEquals("project abc", g2.merge(ctx));
     }
 

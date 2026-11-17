@@ -3,6 +3,7 @@ package pro.fessional.meepo.bind;
 import org.jetbrains.annotations.NotNull;
 import pro.fessional.meepo.bind.wow.Clop;
 import pro.fessional.meepo.bind.wow.Life;
+import pro.fessional.meepo.pack.Utxt;
 import pro.fessional.meepo.poof.RngChecker;
 import pro.fessional.meepo.sack.Acid;
 import pro.fessional.meepo.util.Dent;
@@ -12,11 +13,16 @@ import java.util.Collections;
 import java.util.List;
 
 /**
+ * An exon: one source fragment in a parsed template gene.
+ * <p>DNA nodes describe parse-time transformations; RNA and text nodes retain
+ * the work needed by a later merge. {@code build} reconstructs source text,
+ * while {@code merge} emits output; a directive can participate in only one phase.</p>
+ *
  * <pre>
  * ` &lt;% DNA:RAW The gaps are all one space %&gt; \n`
  * edge=`&lt;% DNA:RAW The gaps are all one space %&gt;`
  * main=`DNA:RAW The gaps are all one space`
- * xxxx9 is xxxx in char[] format, Usually for internal use
+ * xxxx9 retains fixed characters in Utxt, usually for internal use
  * </pre>
  *
  * @author trydofor
@@ -33,15 +39,15 @@ public class Exon {
     /**
      * Caching of edge area
      */
-    protected final char @NotNull [] text9;
+    protected final @NotNull Utxt text9;
 
-    protected Exon(char @NotNull [] text9, @NotNull Clop edge) {
+    protected Exon(@NotNull Utxt text9, @NotNull Clop edge) {
         this.edge = edge;
         this.text9 = text9;
     }
 
     public Exon(@NotNull String text, @NotNull Clop edge) {
-        this(Dent.chars(text, edge), edge);
+        this(new Utxt(Dent.chars(text, edge)), edge);
     }
 
     /**
@@ -94,6 +100,9 @@ public class Exon {
     public void check(StringBuilder err, RngChecker rng) {
     }
 
+    /**
+     * A matched source span and its owning processor; offsets are relative to the text slice.
+     */
     public static class N implements Comparable<N> {
         public final int start;
         public final int until;

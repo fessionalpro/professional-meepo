@@ -1,6 +1,13 @@
 # Compiled class file
 *.class
 target/
+__pycache__/
+
+# Local developer conventions
+/AGETNS.*.md
+
+# Optional JMH CLI output belongs to the current run, not source control.
+jmh-result.*
 
 # Log file
 *.log

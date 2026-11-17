@@ -17,7 +17,7 @@ public class Elv {
     public static final NameEval funSee = new NameEval() {
         @Override
         public @NotNull String[] name() {
-            return new String[]{FUN$SEE};
+            return new String[]{ FUN$SEE };
         }
 
         @Override
@@ -30,11 +30,9 @@ public class Elv {
             if (canSee(obj)) return obj;
 
             for (Object k : arg) {
-                if (k instanceof CharSequence) {
-                    Object v = MapHelper.arg(ctx, (CharSequence) k, true);
-                    if (canSee(v)) {
-                        return v;
-                    }
+                Object v = k instanceof CharSequence ? MapHelper.arg(ctx, (CharSequence) k, true) : k;
+                if (canSee(v)) {
+                    return v;
                 }
             }
 

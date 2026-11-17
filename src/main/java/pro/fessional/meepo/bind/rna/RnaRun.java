@@ -9,6 +9,9 @@ import pro.fessional.meepo.bind.wow.Clop;
 import pro.fessional.meepo.bind.wow.Life;
 import pro.fessional.meepo.bind.wow.Tick;
 import pro.fessional.meepo.util.Dent;
+import pro.fessional.meepo.poof.RnaWarmed;
+import pro.fessional.meepo.poof.RngChecker;
+import pro.fessional.meepo.sack.Acid;
 
 import java.io.IOException;
 import java.io.StringWriter;
@@ -18,6 +21,9 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 /**
+ * RNA:RUN finds replacement positions during parsing and creates TxtRnaRun nodes.
+ * Each resulting node evaluates its engine expression when merging reaches it.
+ *
  * <pre>
  * ` &lt;% RNA:RUN os/who/basename $(pwd)/1 %&gt; \n`
  * edge=`&lt;% RNA:RUN os/who/basename $(pwd)/1 %&gt;`
@@ -44,6 +50,7 @@ public class RnaRun extends Tick implements Bar, Prc {
     @NotNull
     public final String expr;
     public final boolean mute;
+    private RnaWarmed warmed;
 
     public RnaRun(String text, Clop edge, @NotNull Life life, @NotNull String type, @NotNull Pattern find, @NotNull String expr, boolean mute) {
         super(text, edge, life);
@@ -55,7 +62,17 @@ public class RnaRun extends Tick implements Bar, Prc {
 
     @Override
     public Life.State match(List<Exon.N> lst, String txt) {
-        return match(lst, txt, find);
+        return find.pattern().isEmpty() ? Life.State.Skip : match(lst, txt, find);
+    }
+
+    @Override
+    public void check(StringBuilder err, RngChecker rng) {
+        if (find.pattern().isEmpty()) warmed = rng.check(err, type, expr);
+    }
+
+    @Override
+    public void merge(Acid acid, Writer buff) {
+        if (find.pattern().isEmpty()) acid.getEngine(type).eval(acid.context, warmed, mute);
     }
 
     @Override

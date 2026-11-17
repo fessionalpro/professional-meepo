@@ -33,7 +33,7 @@ public class Now {
     public static final NameEval funNow = new NameEval() {
         @Override
         public @NotNull String[] name() {
-            return new String[]{FUN$NOW};
+            return new String[]{ FUN$NOW };
         }
 
         @Override

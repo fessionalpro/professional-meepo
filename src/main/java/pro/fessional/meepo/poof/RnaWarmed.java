@@ -5,6 +5,10 @@ import org.jetbrains.annotations.NotNull;
 import static pro.fessional.meepo.bind.Const.TXT$EMPTY;
 
 /**
+ * The reusable result of warming one RNA expression during parsing.
+ * Holds an engine-specific plan (for example compiled Java or a property path)
+ * and diagnostics; request values belong to Acid rather than this shared plan.
+ *
  * @author trydofor
  * @since 2020-11-09
  */

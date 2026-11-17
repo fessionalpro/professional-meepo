@@ -18,6 +18,9 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 /**
+ * RNA:USE finds replacement positions during parsing and creates TxtRnaUse nodes.
+ * Each resulting node reads the current merge context when it emits its value.
+ *
  * <pre>
  * ` &lt;% RNA:USE /meepo/who/1 %&gt; \n`
  * edge=`&lt;% RNA:USE /meepo/who/1 %&gt;`
